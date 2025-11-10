@@ -23,7 +23,7 @@ module.exports = {
 
 		try {
 			await interaction.guild.members.kick(user, { reason: reason });
-			db.addSanction(user.id, user.tag, interaction.user.id, interaction.user.tag, 'KICK', reason);
+			db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'KICK', reason);
 			await interaction.reply(`**${user.tag}** a été expulsé pour la raison : **${reason}**`);
 		} catch (error) {
 			console.error(error);

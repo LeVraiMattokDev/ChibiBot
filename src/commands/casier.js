@@ -18,7 +18,7 @@ module.exports = {
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'voir') {
 			const user = interaction.options.getUser('utilisateur');
-			const history = db.getUserHistory(user.id);
+			const history = db.getUserHistory(user.id, interaction.guild.id);
 
 			const embed = new EmbedBuilder()
 				.setColor(0xFF0000)
@@ -26,7 +26,7 @@ module.exports = {
 				.setThumbnail(user.displayAvatarURL());
 
 			if (history.length === 0) {
-				embed.setDescription('Cet utilisateur n\'a aucune sanction enregistrée.');
+				embed.setDescription('Cet utilisateur n\'a aucune sanction enregistrée sur ce serveur.');
 			} else {
 				const fields = history.map(s => {
 					const duration = s.duration ? ` (${s.duration} min)` : '';
@@ -40,18 +40,18 @@ module.exports = {
 			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
 		} else if (interaction.options.getSubcommand() === 'recentes') {
-			const recentHistory = db.getRecentHistory();
+			const recentHistory = db.getRecentHistory(interaction.guild.id);
 
 			const embed = new EmbedBuilder()
 				.setColor(0x0099FF)
-				.setTitle('Dernières sanctions du serveur');
+				.setTitle(`Dernières sanctions sur ${interaction.guild.name}`);
 
 			if (recentHistory.length === 0) {
-				embed.setDescription('Aucune sanction récente trouvée.');
+				embed.setDescription('Aucune sanction récente trouvée sur ce serveur.');
 			} else {
 				const description = recentHistory.map(s => {
 					return `**Utilisateur :** ${s.userName} | **Type :** ${s.type}\n**Modo :** ${s.moderatorName} | <t:${Math.floor(s.timestamp / 1000)}:R>`;
-				}).join('\\n\\n');
+				}).join('\n\n');
 				embed.setDescription(description);
 			}
 			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });

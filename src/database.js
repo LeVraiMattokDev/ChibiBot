@@ -1,13 +1,12 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-// Crée ou ouvre la base de données dans le dossier principal du projet
 const db = new Database(path.resolve(__dirname, '..', 'mod_history.sqlite'), { fileMustExist: false });
 
-// Crée la table si elle n'existe pas déjà
 db.exec(`
   CREATE TABLE IF NOT EXISTS sanctions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    guildId TEXT NOT NULL,
     userId TEXT NOT NULL,
     userName TEXT NOT NULL,
     moderatorId TEXT NOT NULL,
@@ -19,25 +18,24 @@ db.exec(`
   )
 `);
 
-console.log('Database initialized.');
+console.log('Database initialized for guild-specific storage.');
 
-// Fonctions pour interagir avec la DB
-function addSanction(userId, userName, moderatorId, moderatorName, type, reason, duration = null) {
+function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null) {
   const stmt = db.prepare(`
-    INSERT INTO sanctions (userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sanctions (guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  stmt.run(userId, userName, moderatorId, moderatorName, type, reason, duration, Date.now());
+  stmt.run(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, Date.now());
 }
 
-function getUserHistory(userId) {
-  const stmt = db.prepare('SELECT * FROM sanctions WHERE userId = ? ORDER BY timestamp DESC');
-  return stmt.all(userId);
+function getUserHistory(userId, guildId) {
+  const stmt = db.prepare('SELECT * FROM sanctions WHERE userId = ? AND guildId = ? ORDER BY timestamp DESC');
+  return stmt.all(userId, guildId);
 }
 
-function getRecentHistory(limit = 10) {
-  const stmt = db.prepare('SELECT * FROM sanctions ORDER BY timestamp DESC LIMIT ?');
-  return stmt.all(limit);
+function getRecentHistory(guildId, limit = 10) {
+  const stmt = db.prepare('SELECT * FROM sanctions WHERE guildId = ? ORDER BY timestamp DESC LIMIT ?');
+  return stmt.all(guildId, limit);
 }
 
 module.exports = {
