@@ -5,7 +5,7 @@ let pool;
 
 async function init() {
 	pool = mysql.createPool({
-		host: dbConfig.host,
+		host: process.env.DB_HOST || dbConfig.host,
 		port: dbConfig.port,
 		user: dbConfig.user,
 		password: dbConfig.password,
