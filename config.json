@@ -1,4 +1,11 @@
 {
 	"token": "MTQzNzM4ODE4MDMxOTExMzMxNw.GUdUMf.f-XBilXyvFmuxx0zX1Uc_UZHE4DYtdW-Mggc2w",
-    "clientId": "1437388180319113317"
+	"clientId": "1437388180319113317",
+	"db": {
+		"host": "127.0.0.1",
+		"port": 3306,
+		"user": "u30_LG63Eqj7Gb",
+		"password": "yh^rZGoUcjH@YlYCV8JGcoX!",
+		"database": "s30_database"
+	}
 }
