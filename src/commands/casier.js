@@ -30,8 +30,17 @@ module.exports = {
 			} else {
 				const fields = history.map(s => {
 					const duration = s.duration ? ` (${s.duration} min)` : '';
+					const sanctionTitle = `ID: ${s.id} | ${s.type}${duration}`;
+					
+					if (s.revoked) {
+						return {
+							name: `~~${sanctionTitle}~~ (Révoquée)`,
+							value: `**Modérateur :** ${s.moderatorName}\n**Raison :** ${s.reason || 'Aucune'}\n<t:${Math.floor(s.timestamp / 1000)}:f>\n**Révoquée par :** ${s.revoked_by_name}\n**Raison révocation :** ${s.revoked_reason}`
+						};
+					}
+
 					return {
-						name: `ID: ${s.id} | ${s.type}${duration}`,
+						name: sanctionTitle,
 						value: `**Modérateur :** ${s.moderatorName}\n**Raison :** ${s.reason || 'Aucune'}\n<t:${Math.floor(s.timestamp / 1000)}:f>`
 					};
 				});

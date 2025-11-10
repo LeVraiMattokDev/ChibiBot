@@ -27,7 +27,12 @@ async function init() {
 		type VARCHAR(255) NOT NULL,
 		reason TEXT,
 		duration INT,
-		timestamp BIGINT NOT NULL
+		timestamp BIGINT NOT NULL,
+		revoked BOOLEAN DEFAULT FALSE,
+		revoked_by_id VARCHAR(255),
+		revoked_by_name VARCHAR(255),
+		revoked_reason VARCHAR(255),
+		revoked_timestamp BIGINT
 	  )
 	`);
 
@@ -58,9 +63,28 @@ async function getRecentHistory(guildId, limit = 10) {
 	return rows;
 }
 
+async function getLatestActiveSanction(userId, guildId, type) {
+	const [rows] = await pool.execute(
+		'SELECT id FROM sanctions WHERE userId = ? AND guildId = ? AND type = ? AND revoked = FALSE ORDER BY timestamp DESC LIMIT 1',
+		[userId, guildId, type]
+	);
+	return rows[0];
+}
+
+async function revokeSanction(sanctionId, guildId, revokerId, revokerName, reason) {
+	const timestamp = Date.now();
+	const [result] = await pool.execute(
+		'UPDATE sanctions SET revoked = TRUE, revoked_by_id = ?, revoked_by_name = ?, revoked_reason = ?, revoked_timestamp = ? WHERE id = ? AND guildId = ?',
+		[revokerId, revokerName, reason, timestamp, sanctionId, guildId]
+	);
+	return result.affectedRows;
+}
+
 module.exports = {
 	init,
 	addSanction,
 	getUserHistory,
 	getRecentHistory,
+	getLatestActiveSanction,
+	revokeSanction,
 };
