@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, MessageFlags } = require('discord.js');
 const db = require('../database');
 
 // ID de l'utilisateur autorisé
@@ -39,7 +39,7 @@ module.exports = {
 		const duration = type === 'TIMEOUT' ? 10 : null; // Ajoute une durée de 10 min pour les faux timeouts
 
 		try {
-			db.addSanction(
+			await db.addSanction(
 				interaction.guild.id,
 				targetUser.id,
 				targetUser.tag,
@@ -63,3 +63,4 @@ module.exports = {
 		}
 	},
 };
+

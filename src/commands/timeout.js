@@ -31,7 +31,7 @@ module.exports = {
 
 		try {
 			await member.timeout(duration * 60 * 1000, reason);
-			db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'TIMEOUT', reason, duration);
+			await db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'TIMEOUT', reason, duration);
 			await interaction.reply(`**${user.tag}** a été rendu silencieux pour **${duration}** minute(s). Raison : **${reason}**`);
 		} catch (error) {
 			console.error(error);
@@ -39,3 +39,4 @@ module.exports = {
 		}
 	},
 };
+

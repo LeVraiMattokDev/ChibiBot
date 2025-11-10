@@ -29,7 +29,7 @@ module.exports = {
 
 		try {
 			await interaction.guild.members.ban(user, { reason: reason, deleteMessageDays: days });
-			db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'BAN', reason);
+			await db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'BAN', reason);
 			await interaction.reply(`**${user.tag}** a été banni pour la raison : **${reason}**`);
 		} catch (error) {
 			console.error(error);

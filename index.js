@@ -33,4 +33,8 @@ for (const file of eventFiles) {
 	}
 }
 
-client.login(token);
+(async () => {
+	await db.init();
+
+	client.login(token);
+})();

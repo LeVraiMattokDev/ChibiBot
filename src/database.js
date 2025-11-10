@@ -1,45 +1,66 @@
-const Database = require('better-sqlite3');
-const path = require('path');
+const mysql = require('mysql2/promise');
+const { db: dbConfig } = require('../config.json');
 
-const db = new Database(path.resolve(__dirname, '..', 'mod_history.sqlite'), { fileMustExist: false });
+let pool;
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS sanctions (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    guildId TEXT NOT NULL,
-    userId TEXT NOT NULL,
-    userName TEXT NOT NULL,
-    moderatorId TEXT NOT NULL,
-    moderatorName TEXT NOT NULL,
-    type TEXT NOT NULL,
-    reason TEXT,
-    duration INTEGER,
-    timestamp INTEGER NOT NULL
-  )
-`);
+async function init() {
+	pool = mysql.createPool({
+		host: dbConfig.host,
+		port: dbConfig.port,
+		user: dbConfig.user,
+		password: dbConfig.password,
+		database: dbConfig.database,
+		waitForConnections: true,
+		connectionLimit: 10,
+		queueLimit: 0
+	});
 
-console.log('Database initialized for guild-specific storage.');
+	// La table est légèrement modifiée pour être compatible MySQL
+	await pool.execute(`
+	  CREATE TABLE IF NOT EXISTS sanctions (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		guildId VARCHAR(255) NOT NULL,
+		userId VARCHAR(255) NOT NULL,
+		userName VARCHAR(255) NOT NULL,
+		moderatorId VARCHAR(255) NOT NULL,
+		moderatorName VARCHAR(255) NOT NULL,
+		type VARCHAR(255) NOT NULL,
+		reason TEXT,
+		duration INT,
+		timestamp BIGINT NOT NULL
+	  )
+	`);
 
-function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null) {
-  const stmt = db.prepare(`
-    INSERT INTO sanctions (guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  stmt.run(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, Date.now());
+	console.log('MariaDB connection pool created and table checked.');
 }
 
-function getUserHistory(userId, guildId) {
-  const stmt = db.prepare('SELECT * FROM sanctions WHERE userId = ? AND guildId = ? ORDER BY timestamp DESC');
-  return stmt.all(userId, guildId);
+async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null) {
+	const timestamp = Date.now();
+	await pool.execute(
+		'INSERT INTO sanctions (guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		[guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp]
+	);
 }
 
-function getRecentHistory(guildId, limit = 10) {
-  const stmt = db.prepare('SELECT * FROM sanctions WHERE guildId = ? ORDER BY timestamp DESC LIMIT ?');
-  return stmt.all(guildId, limit);
+async function getUserHistory(userId, guildId) {
+	const [rows] = await pool.execute(
+		'SELECT * FROM sanctions WHERE userId = ? AND guildId = ? ORDER BY timestamp DESC',
+		[userId, guildId]
+	);
+	return rows;
+}
+
+async function getRecentHistory(guildId, limit = 10) {
+	const [rows] = await pool.execute(
+		'SELECT * FROM sanctions WHERE guildId = ? ORDER BY timestamp DESC LIMIT ?',
+		[guildId, limit]
+	);
+	return rows;
 }
 
 module.exports = {
-  addSanction,
-  getUserHistory,
-  getRecentHistory,
+	init,
+	addSanction,
+	getUserHistory,
+	getRecentHistory,
 };

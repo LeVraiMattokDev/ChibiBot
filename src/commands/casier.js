@@ -18,7 +18,7 @@ module.exports = {
 	async execute(interaction) {
 		if (interaction.options.getSubcommand() === 'voir') {
 			const user = interaction.options.getUser('utilisateur');
-			const history = db.getUserHistory(user.id, interaction.guild.id);
+			const history = await db.getUserHistory(user.id, interaction.guild.id);
 
 			const embed = new EmbedBuilder()
 				.setColor(0xFF0000)
@@ -35,12 +35,12 @@ module.exports = {
 						value: `**Modérateur :** ${s.moderatorName}\n**Raison :** ${s.reason || 'Aucune'}\n<t:${Math.floor(s.timestamp / 1000)}:f>`
 					};
 				});
-				embed.addFields(fields.slice(0, 25)); // Limite de 25 champs par embed
+				embed.addFields(fields.slice(0, 25));
 			}
 			await interaction.reply({ embeds: [embed], flags: MessageFlags.Ephemeral });
 
 		} else if (interaction.options.getSubcommand() === 'recentes') {
-			const recentHistory = db.getRecentHistory(interaction.guild.id);
+			const recentHistory = await db.getRecentHistory(interaction.guild.id);
 
 			const embed = new EmbedBuilder()
 				.setColor(0x0099FF)
