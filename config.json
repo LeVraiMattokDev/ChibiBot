@@ -1,6 +1,7 @@
 {
 	"token": "MTQzNzM4ODE4MDMxOTExMzMxNw.GUdUMf.f-XBilXyvFmuxx0zX1Uc_UZHE4DYtdW-Mggc2w",
 	"clientId": "1437388180319113317",
+    "guildID": "1376641087040524399",
 	"db": {
 		"host": "terra-survie.fr",
 		"port": 3306,
