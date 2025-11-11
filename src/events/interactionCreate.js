@@ -42,6 +42,14 @@ module.exports = {
 			}
 			// Boutons
 			if (interaction.isButton()) {
+				// Pagination du casier
+				if (interaction.customId.startsWith('casier_')) {
+					const casierCommand = interaction.client.commands.get('casier');
+					if (casierCommand) await casierCommand.handlePagination(interaction);
+					return;
+				}
+
+				// Commandes de config
 				if (interaction.customId === 'config_main_menu') await configCommand.handleBack(interaction);
 				if (interaction.customId === 'welcome_toggle') await configCommand.handleWelcomeToggle(interaction);
 				if (interaction.customId === 'welcome_message_modal') await configCommand.handleWelcomeMessageModal(interaction);

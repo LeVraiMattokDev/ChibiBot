@@ -92,6 +92,34 @@ async function getRecentHistory(guildId, limit = 10) {
 	return rows;
 }
 
+// --- Fonctions pour le nouveau système de casier ---
+
+async function countSanctions(guildId, userId = null) {
+	let sql = 'SELECT COUNT(id) as count FROM sanctions WHERE guildId = ?';
+	const params = [guildId];
+	if (userId) {
+		sql += ' AND userId = ?';
+		params.push(userId);
+	}
+	const [rows] = await pool.execute(sql, params);
+	return rows[0].count;
+}
+
+async function getSanctionsPaginated(guildId, page, limit, userId = null) {
+	const offset = (page - 1) * limit;
+	let sql = 'SELECT * FROM sanctions WHERE guildId = ?';
+	const params = [guildId];
+	if (userId) {
+		sql += ' AND userId = ?';
+		params.push(userId);
+	}
+	sql += ' ORDER BY timestamp DESC LIMIT ? OFFSET ?';
+	params.push(limit, offset);
+
+	const [rows] = await pool.execute(sql, params);
+	return rows;
+}
+
 async function getLatestActiveSanction(userId, guildId, type) {
 	const [rows] = await pool.execute(
 		'SELECT id FROM sanctions WHERE userId = ? AND guildId = ? AND type = ? AND revoked = FALSE ORDER BY timestamp DESC LIMIT 1',
@@ -116,6 +144,8 @@ module.exports = {
 	addSanction,
 	getUserHistory,
 	getRecentHistory,
+	countSanctions,
+	getSanctionsPaginated,
 	getLatestActiveSanction,
 	revokeSanction,
 };
