@@ -12,6 +12,7 @@ module.exports = {
 		}
 
 		await interaction.deferReply();
+		console.log('[Blague] Interaction différée. Appel à l\'API...');
 
 		try {
 			const response = await fetch('https://www.blagues-api.fr/api/random', {
@@ -19,6 +20,7 @@ module.exports = {
 					'Authorization': `Bearer ${blaguesApiToken}`
 				}
 			});
+			console.log(`[Blague] Réponse de l'API reçue avec le statut : ${response.status}`);
 
 			if (!response.ok) {
 				throw new Error(`L'API a retourné une erreur : ${response.status}`);
