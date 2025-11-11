@@ -10,7 +10,38 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand
 				.setName('setup')
-				// ... (options existantes)
+				.setDescription('Crée un nouveau panneau pour ouvrir des tickets.')
+				.addChannelOption(option => 
+					option.setName('category')
+						.setDescription('La catégorie où les tickets seront créés.')
+						.setRequired(true)
+						.addChannelTypes(ChannelType.GuildCategory))
+				.addRoleOption(option =>
+					option.setName('support_role')
+						.setDescription('Le rôle qui aura accès aux tickets.')
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('title')
+						.setDescription('Le titre de l\'embed du panneau.')
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('description')
+						.setDescription('La description de l\'embed du panneau.')
+						.setRequired(true))
+				.addStringOption(option =>
+					option.setName('button_label')
+						.setDescription('Le texte sur le bouton.')
+						.setRequired(true))
+				.addChannelOption(option =>
+					option.setName('log_channel')
+						.setDescription('Le salon où envoyer les transcriptions des tickets fermés.')
+						.addChannelTypes(ChannelType.GuildText))
+				.addStringOption(option =>
+					option.setName('panel_name')
+						.setDescription('Un nom interne pour cette configuration de ticket (pour la gestion future).'))
+				.addStringOption(option =>
+					option.setName('button_emoji')
+						.setDescription('L\'emoji sur le bouton.'))
 		)
 		.addSubcommand(subcommand =>
 			subcommand
