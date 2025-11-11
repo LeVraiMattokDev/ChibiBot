@@ -49,18 +49,27 @@ async function init() {
 	console.log('MariaDB connection pool created and tables checked.');
 }
 
-async function setGuildSettings(guildId, settings) {
-	const fields = Object.keys(settings);
-	const values = Object.values(settings);
-	const assignments = fields.map(field => `${field} = ?`).join(', ');
+async function setGuildSettings(guildId, newSettings) {
+	const oldSettings = await getGuildSettings(guildId) || {};
+	const settings = { ...oldSettings, ...newSettings };
 
 	const sql = `
-		INSERT INTO guild_settings (guildId, ${fields.join(', ')})
-		VALUES (?, ${values.map(() => '?').join(', ')})
-		ON DUPLICATE KEY UPDATE ${assignments}
+		INSERT INTO guild_settings (guildId, welcome_enabled, welcome_channel_id, welcome_message, log_channel_id)
+		VALUES (?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			welcome_enabled = VALUES(welcome_enabled),
+			welcome_channel_id = VALUES(welcome_channel_id),
+			welcome_message = VALUES(welcome_message),
+			log_channel_id = VALUES(log_channel_id)
 	`;
 	
-	await pool.execute(sql, [guildId, ...values, ...values]);
+	await pool.execute(sql, [
+		guildId,
+		settings.welcome_enabled || false,
+		settings.welcome_channel_id || null,
+		settings.welcome_message || null,
+		settings.log_channel_id || null
+	]);
 }
 
 async function getGuildSettings(guildId) {
