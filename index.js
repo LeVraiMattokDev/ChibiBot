@@ -45,8 +45,52 @@ for (const file of eventFiles) {
 	}
 }
 
-(async () => {
 	await db.init();
+
+	// Boucle pour vérifier les bans expirés (toutes les 60 secondes)
+	setInterval(async () => {
+		try {
+			const expiredBans = await db.getExpiredBans();
+			if (expiredBans.length === 0) return;
+
+			console.log(`[TempBan] Found ${expiredBans.length} expired ban(s).`);
+
+			for (const ban of expiredBans) {
+				const guild = await client.guilds.fetch(ban.guildId).catch(() => null);
+				if (!guild) continue;
+				
+				try {
+					await guild.members.unban(ban.userId, 'Le bannissement temporaire a expiré.');
+					await db.revokeSanction(ban.id, ban.guildId, client.user.id, client.user.tag, 'Expiration automatique');
+					console.log(`[TempBan] Unbanned ${ban.userName} from ${guild.name}.`);
+
+					// Optionnel : Envoyer un log de l'unban automatique
+					const user = await client.users.fetch(ban.userId);
+					const embed = new (require('discord.js').EmbedBuilder)()
+						.setTitle('Membre Débanni (Automatique)')
+						.setColor(0x57F287)
+						.addFields(
+							{ name: 'Membre', value: `${user.tag} (${user.id})` },
+							{ name: 'Raison', value: 'Le bannissement temporaire a expiré.' }
+						)
+						.setTimestamp();
+					
+					const { logAction } = require('./src/utils/logger');
+					await logAction(guild, embed);
+
+				} catch (error) {
+					// L'utilisateur n'est peut-être plus banni, on met juste à jour la DB
+					if (error.code === 10026) { // Unknown Ban
+						await db.revokeSanction(ban.id, ban.guildId, client.user.id, client.user.tag, 'Déjà débanni');
+					} else {
+						console.error(`[TempBan] Failed to unban user ${ban.userId} from guild ${ban.guildId}:`, error);
+					}
+				}
+			}
+		} catch (error) {
+			console.error('[ERROR] Failed to check for expired bans:', error);
+		}
+	}, 60 * 1000);
 
 	client.login(token);
 })();

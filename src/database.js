@@ -27,6 +27,7 @@ async function init() {
 		reason TEXT,
 		duration INT,
 		timestamp BIGINT NOT NULL,
+		expires_at BIGINT, -- Pour les tempbans
 		revoked BOOLEAN DEFAULT FALSE,
 		revoked_by_id VARCHAR(255),
 		revoked_by_name VARCHAR(255),
@@ -76,11 +77,11 @@ async function getGuildSettings(guildId) {
 	return rows[0];
 }
 
-async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null) {
+async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null, expires_at = null) {
 	const timestamp = Date.now();
 	await pool.execute(
-		'INSERT INTO sanctions (guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-		[guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp]
+		'INSERT INTO sanctions (guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		[guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp, expires_at]
 	);
 }
 
@@ -126,6 +127,15 @@ async function getSanctionsPaginated(guildId, page, limit, userId = null) {
 	return rows;
 }
 
+async function getExpiredBans() {
+	const now = Date.now();
+	const [rows] = await pool.execute(
+		'SELECT * FROM sanctions WHERE type = ? AND revoked = FALSE AND expires_at IS NOT NULL AND expires_at <= ?',
+		['BAN', now]
+	);
+	return rows;
+}
+
 async function getLatestActiveSanction(userId, guildId, type) {
 	const [rows] = await pool.execute(
 		'SELECT id FROM sanctions WHERE userId = ? AND guildId = ? AND type = ? AND revoked = FALSE ORDER BY timestamp DESC LIMIT 1',
@@ -152,6 +162,7 @@ module.exports = {
 	getRecentHistory,
 	countSanctions,
 	getSanctionsPaginated,
+	getExpiredBans,
 	getLatestActiveSanction,
 	revokeSanction,
 };
