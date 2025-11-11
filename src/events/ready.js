@@ -8,6 +8,9 @@ module.exports = {
 
 		const activities = [
 			{ name: 'Chibi Support', type: ActivityType.Playing },
+			{ name: 'Powered with JavaScript', type: ActivityType.Playing },
+			{ name: 'Start with /config', type: ActivityType.Playing },
+			{ name: 'Serveur Support', type: ActivityType.Streaming, url: 'https://discord.gg/qeH3vrfMU2' },
 		];
 
 		setInterval(() => {
