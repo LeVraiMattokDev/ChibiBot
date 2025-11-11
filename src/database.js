@@ -45,6 +45,36 @@ async function init() {
 		log_channel_id VARCHAR(255)
 	  )
 	`);
+	
+	await pool.execute(`
+	  CREATE TABLE IF NOT EXISTS ticket_configs (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		guildId VARCHAR(255) NOT NULL,
+		panel_name VARCHAR(255) NOT NULL, -- Nom interne pour la config
+		message_id VARCHAR(255), -- ID du message contenant le panneau
+		channel_id VARCHAR(255), -- ID du salon où se trouve le panneau
+		category_id VARCHAR(255) NOT NULL,
+		support_role_id VARCHAR(255) NOT NULL,
+		log_channel_id VARCHAR(255),
+		title VARCHAR(255) DEFAULT 'Support Ticket',
+		description TEXT,
+		button_label VARCHAR(255) DEFAULT 'Créer un ticket',
+		button_emoji VARCHAR(255)
+	  )
+	`);
+
+	await pool.execute(`
+	  CREATE TABLE IF NOT EXISTS tickets (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		guildId VARCHAR(255) NOT NULL,
+		ticket_channel_id VARCHAR(255) NOT NULL,
+		creator_id VARCHAR(255) NOT NULL,
+		status ENUM('open', 'closed') DEFAULT 'open',
+		created_at BIGINT NOT NULL,
+		closed_at BIGINT,
+		closed_by_id VARCHAR(255)
+	  )
+	`);
 
 	console.log('MariaDB connection pool created and tables checked.');
 }
@@ -146,15 +176,61 @@ async function revokeSanction(sanctionId, guildId, revokerId, revokerName, reaso
 	return result.affectedRows;
 }
 
+// --- Fonctions pour la configuration des tickets ---
+
+async function createTicketConfig(guildId, config) {
+	const { name, categoryId, supportRoleId, logChannelId, title, description, buttonLabel, buttonEmoji } = config;
+	const [result] = await pool.execute(
+		'INSERT INTO ticket_configs (guildId, panel_name, category_id, support_role_id, log_channel_id, title, description, button_label, button_emoji) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+		[guildId, name, categoryId, supportRoleId, logChannelId, title, description, buttonLabel, buttonEmoji]
+	);
+	return result.insertId;
+}
+
+async function updateTicketPanelMessage(configId, messageId, channelId) {
+	await pool.execute('UPDATE ticket_configs SET message_id = ?, channel_id = ? WHERE id = ?', [messageId, channelId, configId]);
+}
+
+async function getTicketConfigByMessage(messageId) {
+	const [rows] = await pool.execute('SELECT * FROM ticket_configs WHERE message_id = ?', [messageId]);
+	return rows[0];
+}
+
+
+async function createTicketRecord(guildId, channelId, creatorId, configId) {
+	await pool.execute(
+
+
+		'INSERT INTO tickets (guildId, ticket_channel_id, creator_id, config_id, created_at) VALUES (?, ?, ?, ?, ?)',
+		[guildId, channelId, creatorId, configId, Date.now()]
+	);
+}
+
+async function getTicketByChannel(channelId) {
+	const [rows] = await pool.execute('SELECT * FROM tickets WHERE ticket_channel_id = ?', [channelId]);
+	return rows[0];
+}
+
+async function closeTicket(channelId, closerId) {
+	await pool.execute(
+		'UPDATE tickets SET status = "closed", closed_at = ?, closed_by_id = ? WHERE ticket_channel_id = ?',
+		[Date.now(), closerId, channelId]
+	);
+}
+
 module.exports = {
 	init,
 	setGuildSettings,
 	getGuildSettings,
-	addSanction,
-	getUserHistory,
-	getRecentHistory,
-	countSanctions,
+	// ... (anciennes fonctions)
 	getSanctionsPaginated,
 	getLatestActiveSanction,
 	revokeSanction,
+	// Nouvelles fonctions
+	createTicketConfig,
+	updateTicketPanelMessage,
+	getTicketConfigByMessage,
+	createTicketRecord,
+	getTicketByChannel,
+	closeTicket,
 };
