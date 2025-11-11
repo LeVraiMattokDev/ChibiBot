@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const db = require('../database');
+const { logSanction } = require('../../utils/logger');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -34,6 +35,8 @@ module.exports = {
 			}
 
 			await interaction.editReply(`✅ Le timeout de **${targetUser.tag}** a été révoqué.`);
+
+			await logSanction(interaction, 'UNMUTE', targetUser, reason);
 
 		} catch (error) {
 			console.error(error);

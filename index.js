@@ -9,8 +9,9 @@ const client = new Client({
 		GatewayIntentBits.Guilds, 
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessages,
-		GatewayIntentBits.MessageContent, // Requis pour lire le contenu des messages
+		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildVoiceStates,
+		GatewayIntentBits.GuildModeration, // Pour les logs d'audit (salons, rôles, etc.)
 	] 
 });
 

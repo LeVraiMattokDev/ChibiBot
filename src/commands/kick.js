@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const db = require('../database');
+const { logSanction } = require('../../utils/logger');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -25,6 +26,9 @@ module.exports = {
 			await interaction.guild.members.kick(user, { reason: reason });
 			await db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'KICK', reason);
 			await interaction.reply(`**${user.tag}** a été expulsé pour la raison : **${reason}**`);
+			
+			await logSanction(interaction, 'KICK', user, reason);
+
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({ content: `Je n'ai pas pu expulser **${user.tag}**. Vérifiez ma hiérarchie de rôles.`, flags: MessageFlags.Ephemeral });

@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, MessageFlags } = require('discord.js');
 const db = require('../database');
+const { logSanction } = require('../../utils/logger');
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -33,6 +34,9 @@ module.exports = {
 			await member.timeout(duration * 60 * 1000, reason);
 			await db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'TIMEOUT', reason, duration);
 			await interaction.reply(`**${user.tag}** a été rendu silencieux pour **${duration}** minute(s). Raison : **${reason}**`);
+
+			await logSanction(interaction, 'TIMEOUT', user, reason, duration);
+
 		} catch (error) {
 			console.error(error);
 			await interaction.reply({ content: `Je n'ai pas pu rendre **${user.tag}** silencieux. Vérifiez ma hiérarchie de rôles.`, flags: MessageFlags.Ephemeral });
