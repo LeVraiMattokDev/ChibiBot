@@ -7,10 +7,6 @@ module.exports = {
 		console.log(`Ready! Logged in as ${client.user.tag}`);
 
 		const activities = [
-			{ name: 'vous surveiller', type: ActivityType.Watching },
-			{ name: 'de la musique', type: ActivityType.Listening },
-			{ name: 'au yams', type: ActivityType.Playing },
-			{ name: '/ping', type: ActivityType.Watching },
 			{ name: 'V0.0.2', type: ActivityType.Custom },
 		];
 
