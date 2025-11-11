@@ -77,7 +77,55 @@ module.exports = {
 	},
 };
 
-// ... (fonction handleSetup existante)
+async function handleSetup(interaction) {
+	await interaction.deferReply({ ephemeral: true });
+
+	const config = {
+		name: interaction.options.getString('panel_name') || `ticket-panel-${Date.now()}`,
+		categoryId: interaction.options.getChannel('category').id,
+		supportRoleId: interaction.options.getRole('support_role').id,
+		logChannelId: interaction.options.getChannel('log_channel')?.id,
+		title: interaction.options.getString('title'),
+		description: interaction.options.getString('description'),
+		buttonLabel: interaction.options.getString('button_label'),
+		buttonEmoji: interaction.options.getString('button_emoji'),
+	};
+
+	try {
+		// 1. Enregistrer la configuration dans la DB
+		const configId = await db.createTicketConfig(interaction.guild.id, config);
+		const customId = `ticket_create_${configId}`;
+
+		// 2. Créer l'embed et le bouton
+		const embed = new EmbedBuilder()
+			.setTitle(config.title)
+			.setDescription(config.description)
+			.setColor(0x5865F2);
+
+		const button = new ButtonBuilder()
+			.setCustomId(customId)
+			.setLabel(config.buttonLabel)
+			.setStyle(ButtonStyle.Primary);
+			
+		if (config.buttonEmoji) {
+			button.setEmoji(config.buttonEmoji);
+		}
+		
+		const row = new ActionRowBuilder().addComponents(button);
+
+		// 3. Envoyer le message du panneau dans le salon actuel
+		const panelMessage = await interaction.channel.send({ embeds: [embed], components: [row] });
+		
+		// 4. Mettre à jour la config DB avec l'ID du message
+		await db.updateTicketPanelMessage(configId, panelMessage.id, panelMessage.channel.id);
+
+		await interaction.editReply('✅ Panneau de ticket créé avec succès !');
+
+	} catch (error) {
+		console.error('Erreur lors de la création du panneau de ticket :', error);
+		await interaction.editReply('❌ Une erreur est survenue lors de la création du panneau.');
+	}
+}
 
 async function handleAddUser(interaction) {
 	const ticket = await db.getTicketByChannel(interaction.channel.id);
@@ -147,7 +195,7 @@ async function handleClose(interaction) {
 	// 3. Mettre à jour la DB
 	await db.closeTicket(interaction.channel.id, interaction.user.id);
 	
-	// 4. Supprimer le salon (après un court délai pour que l'utilisateur voie la confirmation)
+	// 4. Supprimer le salon
 	setTimeout(() => {
 		interaction.channel.delete('Ticket fermé').catch(console.error);
 	}, 5000);
