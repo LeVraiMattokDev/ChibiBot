@@ -41,7 +41,8 @@ async function init() {
 		guildId VARCHAR(255) PRIMARY KEY,
 		welcome_enabled BOOLEAN DEFAULT FALSE,
 		welcome_channel_id VARCHAR(255),
-		welcome_message TEXT
+		welcome_message TEXT,
+		log_channel_id VARCHAR(255)
 	  )
 	`);
 

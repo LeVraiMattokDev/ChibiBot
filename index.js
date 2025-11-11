@@ -4,7 +4,15 @@ const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
 const db = require('./src/database.js');
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
+const client = new Client({ 
+	intents: [
+		GatewayIntentBits.Guilds, 
+		GatewayIntentBits.GuildMembers,
+		GatewayIntentBits.GuildMessages,
+		GatewayIntentBits.MessageContent, // Requis pour lire le contenu des messages
+		GatewayIntentBits.GuildVoiceStates,
+	] 
+});
 
 client.commands = new Collection();
 const commandsPath = path.join(__dirname, 'src/commands');

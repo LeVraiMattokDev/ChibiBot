@@ -37,6 +37,7 @@ module.exports = {
 			if (interaction.isStringSelectMenu()) {
 				if (interaction.customId === 'config_category_select') await configCommand.handleCategorySelect(interaction);
 				if (interaction.customId === 'welcome_channel_select') await configCommand.handleWelcomeChannel(interaction);
+				if (interaction.customId === 'logs_channel_select') await configCommand.handleLogsChannel(interaction);
 				return;
 			}
 			// Boutons
