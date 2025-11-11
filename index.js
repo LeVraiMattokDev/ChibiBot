@@ -11,8 +11,11 @@ const client = new Client({
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildVoiceStates,
-		GatewayIntentBits.GuildModeration, // Pour les logs d'audit (salons, rôles, etc.)
-	] 
+		GatewayIntentBits.GuildModeration,
+		GatewayIntentBits.GuildEmojisAndStickers,
+		GatewayIntentBits.GuildInvites,
+		GatewayIntentBits.GuildWebhooks,
+	]
 });
 
 client.commands = new Collection();
