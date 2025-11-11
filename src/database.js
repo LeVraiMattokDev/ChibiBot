@@ -36,7 +36,35 @@ async function init() {
 	  )
 	`);
 
-	console.log('MariaDB connection pool created and table checked.');
+	await pool.execute(`
+	  CREATE TABLE IF NOT EXISTS guild_settings (
+		guildId VARCHAR(255) PRIMARY KEY,
+		welcome_enabled BOOLEAN DEFAULT FALSE,
+		welcome_channel_id VARCHAR(255),
+		welcome_message TEXT
+	  )
+	`);
+
+	console.log('MariaDB connection pool created and tables checked.');
+}
+
+async function setGuildSettings(guildId, settings) {
+	const fields = Object.keys(settings);
+	const values = Object.values(settings);
+	const assignments = fields.map(field => `${field} = ?`).join(', ');
+
+	const sql = `
+		INSERT INTO guild_settings (guildId, ${fields.join(', ')})
+		VALUES (?, ${values.map(() => '?').join(', ')})
+		ON DUPLICATE KEY UPDATE ${assignments}
+	`;
+	
+	await pool.execute(sql, [guildId, ...values, ...values]);
+}
+
+async function getGuildSettings(guildId) {
+	const [rows] = await pool.execute('SELECT * FROM guild_settings WHERE guildId = ?', [guildId]);
+	return rows[0];
 }
 
 async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null) {
@@ -82,6 +110,8 @@ async function revokeSanction(sanctionId, guildId, revokerId, revokerName, reaso
 
 module.exports = {
 	init,
+	setGuildSettings,
+	getGuildSettings,
 	addSanction,
 	getUserHistory,
 	getRecentHistory,
