@@ -1,4 +1,5 @@
 const { Events, ActivityType } = require('discord.js');
+const { version } = require('../../package.json'); // Importe la version
 
 module.exports = {
 	name: Events.ClientReady,
@@ -7,6 +8,7 @@ module.exports = {
 		console.log(`Ready! Logged in as ${client.user.tag}`);
 
 		const activities = [
+			{ name: `v${version}`, type: ActivityType.Playing }, // Ajout de la version
 			{ name: 'Powered with JavaScript', type: ActivityType.Playing },
 			{ name: 'Start with /config', type: ActivityType.Playing },
 			{ name: 'Serveur Support', type: ActivityType.Streaming, url: 'https://discord.gg/qeH3vrfMU2' },
