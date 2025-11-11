@@ -7,7 +7,7 @@ module.exports = {
 		console.log(`Ready! Logged in as ${client.user.tag}`);
 
 		const activities = [
-			{ name: 'V0.0.2', type: ActivityType.Custom },
+			{ name: 'v0.0.2', type: ActivityType.Playing },
 		];
 
 		setInterval(() => {
