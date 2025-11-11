@@ -7,20 +7,27 @@ module.exports = {
 		.setName('unban')
 		.setDescription('Révoque le bannissement d\'un utilisateur.')
 		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers)
-		.addUserOption(option =>
+		.addStringOption(option =>
 			option.setName('utilisateur')
-				.setDescription('L\'utilisateur à débannir.')
+				.setDescription('L\'utilisateur à débannir (ID obligatoire).')
 				.setRequired(true))
 		.addStringOption(option =>
 			option.setName('raison')
 				.setDescription('La raison de la révocation du ban.')
 				.setRequired(true)),
 	async execute(interaction) {
-		const targetUser = interaction.options.getUser('utilisateur');
+		const userId = interaction.options.getString('utilisateur');
 		const reason = interaction.options.getString('raison');
 		const revoker = interaction.user;
 
 		await interaction.deferReply({ ephemeral: true });
+		
+		let targetUser;
+		try {
+			targetUser = await interaction.client.users.fetch(userId);
+		} catch (error) {
+			return interaction.editReply(`❌ Utilisateur introuvable pour l'ID : \`${userId}\`.`);
+		}
 
 		try {
 			// 1. Révoquer le ban sur Discord

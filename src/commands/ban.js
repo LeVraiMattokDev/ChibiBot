@@ -6,9 +6,9 @@ module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ban')
 		.setDescription('Bannir un utilisateur du serveur.')
-		.addUserOption(option =>
+		.addStringOption(option =>
 			option.setName('utilisateur')
-				.setDescription('L\'utilisateur à bannir')
+				.setDescription('L\'utilisateur à bannir (mention ou ID).')
 				.setRequired(true))
 		.addStringOption(option =>
 			option.setName('raison')
@@ -23,10 +23,21 @@ module.exports = {
 				.setMaxValue(7))
 		.setDefaultMemberPermissions(PermissionFlagsBits.BanMembers),
 	async execute(interaction) {
-		const user = interaction.options.getUser('utilisateur');
+		const userInput = interaction.options.getString('utilisateur');
 		const reason = interaction.options.getString('raison') || 'Aucune raison spécifiée';
 		const duration = interaction.options.getString('durée');
 		const days = interaction.options.getInteger('jours_messages') || 0;
+
+		// Extrait l'ID de la mention ou utilise la chaîne si c'est déjà un ID
+		const userId = userInput.match(/^<@!?(\d+)>$/)?.[1] || userInput;
+
+		// Tente de récupérer l'objet User
+		let user;
+		try {
+			user = await interaction.client.users.fetch(userId);
+		} catch (error) {
+			return interaction.reply({ content: `❌ Utilisateur introuvable pour l'ID : \`${userId}\`.`, flags: MessageFlags.Ephemeral });
+		}
 
 		if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.BanMembers)) {
 			return interaction.reply({ content: 'Je n\'ai pas la permission de bannir des membres.', flags: MessageFlags.Ephemeral });
@@ -42,7 +53,7 @@ module.exports = {
 			
 		} catch (error) {
 			console.error(error);
-			await interaction.reply({ content: `Je n'ai pas pu bannir **${user.tag}**. Vérifiez ma hiérarchie de rôles.`, flags: MessageFlags.Ephemeral });
+			await interaction.reply({ content: `Je n'ai pas pu bannir **${user.tag}**. Vérifiez ma hiérarchie de rôles ou si l'utilisateur est déjà banni.`, flags: MessageFlags.Ephemeral });
 		}
 	},
 };
