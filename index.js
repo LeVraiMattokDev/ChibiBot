@@ -38,3 +38,6 @@ for (const file of eventFiles) {
 
 	client.login(token);
 })();
+
+// Maintient le processus en vie. Ne pas supprimer.
+setInterval(() => {}, 1 << 30);
