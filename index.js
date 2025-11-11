@@ -45,6 +45,7 @@ for (const file of eventFiles) {
 	}
 }
 
+(async () => {
 	await db.init();
 
 	// Boucle pour vérifier les bans expirés (toutes les 60 secondes)

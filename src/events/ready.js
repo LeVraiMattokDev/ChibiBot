@@ -17,6 +17,6 @@ module.exports = {
 		setInterval(() => {
 			const status = activities[Math.floor(Math.random() * activities.length)];
 			client.user.setActivity(status);
-		}, 15000);
+		}, 5000);
 	},
 };
