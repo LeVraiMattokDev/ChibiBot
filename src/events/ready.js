@@ -7,7 +7,7 @@ module.exports = {
 		console.log(`Ready! Logged in as ${client.user.tag}`);
 
 		const activities = [
-			{ name: 'v0.0.2', type: ActivityType.Custom },
+			{ name: 'Chibi Support', type: ActivityType.Playing },
 		];
 
 		setInterval(() => {
