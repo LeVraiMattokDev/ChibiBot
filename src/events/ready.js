@@ -11,6 +11,7 @@ module.exports = {
 			{ name: 'de la musique', type: ActivityType.Listening },
 			{ name: 'au yams', type: ActivityType.Playing },
 			{ name: '/ping', type: ActivityType.Watching },
+			{ name: 'V0.0.2', type: ActivityType.Custom },
 		];
 
 		setInterval(() => {
