@@ -1,6 +1,6 @@
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v9');
-const { clientId, guildId, token } = require('./config.json');
+const { clientId, token } = require('./config.json');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -18,14 +18,14 @@ const rest = new REST({ version: '10' }).setToken(token);
 
 (async () => {
 	try {
-		console.log('Started refreshing application (/) commands for a specific guild.');
+		console.log('Started refreshing GLOBAL application (/) commands.');
 
 		await rest.put(
-			Routes.applicationGuildCommands(clientId, guildId),
+			Routes.applicationCommands(clientId),
 			{ body: commands },
 		);
 
-		console.log('Successfully reloaded application (/) commands.');
+		console.log('Successfully reloaded GLOBAL application (/) commands.');
 	} catch (error) {
 		console.error(error);
 	}
