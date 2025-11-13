@@ -1,7 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { token } = require('./config.json');
+const { token, ...config } = require('./config.json');
+const { deployCommands } = require('./deploy-commands.js');
 const db = require('./src/database.js');
 
 const client = new Client({ 
@@ -11,7 +12,7 @@ const client = new Client({
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
 		GatewayIntentBits.GuildVoiceStates,
-		GatewayIntentBits.GuildModeration,
+		GatewayItntentBits.GuildModeration,
 		GatewayIntentBits.GuildEmojisAndStickers,
 		GatewayIntentBits.GuildInvites,
 		GatewayIntentBits.GuildWebhooks,
@@ -46,6 +47,11 @@ for (const file of eventFiles) {
 }
 
 (async () => {
+	// Déploie les commandes à chaque démarrage. ATTENTION : Risqué si le bot redémarre en boucle.
+	console.log('[STARTUP] Refreshing application (/) commands...');
+	await deployCommands({ token, ...config });
+	console.log('[STARTUP] Command refresh finished.');
+
 	await db.init();
 
 	// Boucle pour vérifier les bans expirés (toutes les 60 secondes)
