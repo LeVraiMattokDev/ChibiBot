@@ -42,7 +42,32 @@ async function init() {
 		welcome_enabled BOOLEAN DEFAULT FALSE,
 		welcome_channel_id VARCHAR(255),
 		welcome_message TEXT,
-		log_channel_id VARCHAR(255)
+		log_channel_id VARCHAR(255),
+		economy_money_per_message FLOAT DEFAULT 1,
+		economy_xp_per_message INT DEFAULT 10
+	  )
+	`);
+
+	await pool.execute(`
+	  CREATE TABLE IF NOT EXISTS user_profiles (
+		userId VARCHAR(255) NOT NULL,
+		guildId VARCHAR(255) NOT NULL,
+		money DECIMAL(15, 2) DEFAULT 0.00,
+		xp INT DEFAULT 0,
+		level INT DEFAULT 0,
+		last_message_timestamp BIGINT DEFAULT 0,
+		PRIMARY KEY (userId, guildId)
+	  )
+	`);
+
+	await pool.execute(`
+	  CREATE TABLE IF NOT EXISTS shop_items (
+		id INT AUTO_INCREMENT PRIMARY KEY,
+		guildId VARCHAR(255) NOT NULL,
+		name VARCHAR(255) NOT NULL,
+		description TEXT,
+		price DECIMAL(15, 2) NOT NULL,
+		UNIQUE KEY (guildId, name)
 	  )
 	`);
 
@@ -74,8 +99,58 @@ async function setGuildSettings(guildId, newSettings) {
 
 async function getGuildSettings(guildId) {
 	const [rows] = await pool.execute('SELECT * FROM guild_settings WHERE guildId = ?', [guildId]);
+	if (rows.length > 0) return rows[0];
+	// Si pas de settings, en créer des par défaut
+	await setGuildSettings(guildId, {});
+	const [newRows] = await pool.execute('SELECT * FROM guild_settings WHERE guildId = ?', [guildId]);
+	return newRows[0];
+}
+
+// --- Fonctions d'Économie ---
+
+async function getUserProfile(userId, guildId) {
+	const [rows] = await pool.execute('SELECT * FROM user_profiles WHERE userId = ? AND guildId = ?', [userId, guildId]);
+	if (rows.length > 0) return rows[0];
+
+	// Créer un profil s'il n'existe pas
+	await pool.execute('INSERT INTO user_profiles (userId, guildId) VALUES (?, ?)', [userId, guildId]);
+	const [newRows] = await pool.execute('SELECT * FROM user_profiles WHERE userId = ? AND guildId = ?', [userId, guildId]);
+	return newRows[0];
+}
+
+async function updateUserProfile(userId, guildId, data) {
+	const fields = Object.keys(data);
+	const values = Object.values(data);
+	const assignments = fields.map(field => `${field} = ?`).join(', ');
+
+	const sql = `UPDATE user_profiles SET ${assignments} WHERE userId = ? AND guildId = ?`;
+	await pool.execute(sql, [...values, userId, guildId]);
+}
+
+async function addShopItem(guildId, name, description, price) {
+	await pool.execute(
+		'INSERT INTO shop_items (guildId, name, description, price) VALUES (?, ?, ?, ?)',
+		[guildId, name, description, price]
+	);
+}
+
+async function removeShopItem(guildId, name) {
+	const [result] = await pool.execute('DELETE FROM shop_items WHERE guildId = ? AND name = ?', [guildId, name]);
+	return result.affectedRows;
+}
+
+async function getShopItem(guildId, name) {
+	const [rows] = await pool.execute('SELECT * FROM shop_items WHERE guildId = ? AND name = ?', [guildId, name]);
 	return rows[0];
 }
+
+async function getShopItems(guildId) {
+	const [rows] = await pool.execute('SELECT * FROM shop_items WHERE guildId = ? ORDER BY price ASC', [guildId]);
+	return rows;
+}
+
+
+// --- Fonctions de Sanctions ---
 
 async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null, expires_at = null) {
 	const timestamp = Date.now();
@@ -165,4 +240,11 @@ module.exports = {
 	getExpiredBans,
 	getLatestActiveSanction,
 	revokeSanction,
+	// Économie
+	getUserProfile,
+	updateUserProfile,
+	addShopItem,
+	removeShopItem,
+	getShopItem,
+	getShopItems,
 };
