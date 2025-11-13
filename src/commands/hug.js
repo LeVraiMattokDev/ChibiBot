@@ -12,8 +12,20 @@ module.exports = {
         await interaction.deferReply();
 
         try {
+            console.log('[Hug] Appel à l\'API some-random-api...');
             const response = await fetch('https://some-random-api.com/animu/hug');
+            console.log(`[Hug] Réponse de l'API reçue avec le statut : ${response.status}`);
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`L'API a retourné une erreur : ${response.status}. Corps de la réponse : ${errorBody}`);
+            }
+
             const data = await response.json();
+            
+            if (!data.link) {
+				throw new Error('Le format de la réponse de l\'API a changé et ne contient pas de lien.');
+			}
 
             const embed = new EmbedBuilder()
                 .setColor(0xFFC0CB) // Rose
@@ -22,8 +34,8 @@ module.exports = {
 
             await interaction.editReply({ embeds: [embed] });
         } catch (error) {
-            console.error(error);
-            await interaction.editReply('❌ Impossible de récupérer un GIF pour le moment.');
+            console.error('[Hug Commande Erreur]', error);
+            await interaction.editReply('❌ Oups ! L\'API des GIFs semble avoir un hoquet. Réessayez plus tard.');
         }
     },
 };
