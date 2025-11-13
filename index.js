@@ -1,8 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { token, ...config } = require('./config.json');
-const { deployCommands } = require('./deploy-commands.js');
+const { token } = require('./config.json');
 const db = require('./src/database.js');
 
 const client = new Client({ 
@@ -47,11 +46,6 @@ for (const file of eventFiles) {
 }
 
 (async () => {
-	// Déploie les commandes à chaque démarrage. ATTENTION : Risqué si le bot redémarre en boucle.
-	console.log('[STARTUP] Refreshing application (/) commands...');
-	await deployCommands({ token, ...config });
-	console.log('[STARTUP] Command refresh finished.');
-
 	await db.init();
 
 	// Boucle pour vérifier les bans expirés (toutes les 60 secondes)
