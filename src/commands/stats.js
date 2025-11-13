@@ -24,17 +24,17 @@ module.exports = {
 		const totalUsers = client.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0);
 
 		const embed = new EmbedBuilder()
-			.setColor(0x5865F2) // Bleu Discord
+			.setColor(0x5865F2)
 			.setTitle(`Statistiques de ${client.user.username}`)
 			.setThumbnail(client.user.displayAvatarURL())
+			.setDescription('Voici quelques informations sur moi !')
 			.addFields(
-				{ name: '📊 Serveurs', value: `${client.guilds.cache.size} serveurs`, inline: true },
-				{ name: '👥 Utilisateurs', value: `${totalUsers} au total`, inline: true },
-				{ name: '⏱️ Uptime', value: uptime, inline: true },
-				{ name: '🧠 Mémoire', value: `${memoryUsage} MB`, inline: true },
-				{ name: '🤖 Version Bot', value: `v${version}`, inline: true },
-				{ name: '📚 Version Discord.js', value: `v${djsVersion}`, inline: true },
-				{ name: '🟩 Version Node.js', value: process.version, inline: true }
+				{ name: '📊 Au service de', value: `${client.guilds.cache.size} serveurs`, inline: true },
+				{ name: '👥 Auprès de', value: `${totalUsers} utilisateurs`, inline: true },
+				{ name: '⏱️ En ligne depuis', value: uptime, inline: true },
+				{ name: '🧠 Mémoire utilisée', value: `${memoryUsage} MB`, inline: true },
+				{ name: '🤖 Ma version', value: `v${version}`, inline: true },
+				{ name: '🎂 Créé le', value: `<t:${Math.floor(client.user.createdTimestamp / 1000)}:D>`, inline: true }
 			)
 			.setTimestamp();
 
