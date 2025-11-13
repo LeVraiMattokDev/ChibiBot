@@ -12,8 +12,8 @@ module.exports = {
         await interaction.deferReply();
 
         try {
-            console.log('[Hug] Appel à l\'API some-random-api...');
-            const response = await fetch('https://some-random-api.com/animu/hug');
+            console.log('[Hug] Appel à la nouvelle API waifu.pics...');
+            const response = await fetch('https://api.waifu.pics/sfw/hug');
             console.log(`[Hug] Réponse de l'API reçue avec le statut : ${response.status}`);
 
             if (!response.ok) {
@@ -23,14 +23,14 @@ module.exports = {
 
             const data = await response.json();
             
-            if (!data.link) {
-				throw new Error('Le format de la réponse de l\'API a changé et ne contient pas de lien.');
+            if (!data.url) {
+				throw new Error('Le format de la réponse de l\'API a changé et ne contient pas d\'URL.');
 			}
 
             const embed = new EmbedBuilder()
                 .setColor(0xFFC0CB) // Rose
                 .setDescription(`**${user.username}** fait un gros câlin à **${target.username}** !`)
-                .setImage(data.link);
+                .setImage(data.url);
 
             await interaction.editReply({ embeds: [embed] });
         } catch (error) {
