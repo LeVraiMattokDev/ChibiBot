@@ -35,7 +35,7 @@ async function buildMainMenu(interaction) {
 }
 
 async function buildFeatureMenu(interaction, type) {
-	const settings = await db.getGuildSettings(interaction.guild.id);
+	const settings = await db.getGuildSettings(interaction.guild.id); // Garanti de retourner un objet
 	const s = (bool) => bool ? '✅ Activé' : '❌ Désactivé';
 	let embed, components = [];
 
@@ -58,7 +58,10 @@ async function buildFeatureMenu(interaction, type) {
 		
 		case 'logs':
 			embed = new EmbedBuilder().setTitle('📝 Config. Logs').setColor(0xFEE75C)
-				.addFields({ name: 'Statut', value: s(settings.log_enabled) }, { name: 'Salon', value: settings.log_channel_id ? `<#${settings.log_channel_id}>` : 'Non défini' });
+				.addFields(
+					{ name: 'Statut', value: s(settings.log_enabled) },
+					{ name: 'Salon', value: settings.log_channel_id ? `<#${settings.log_channel_id}>` : 'Non défini' }
+				);
 			const logsToggle = new ButtonBuilder().setCustomId('config_toggle_log_enabled').setLabel(settings.log_enabled ? 'Désactiver' : 'Activer').setStyle(settings.log_enabled ? ButtonStyle.Danger : ButtonStyle.Success);
 			const logsChanSelect = new StringSelectMenuBuilder().setCustomId('logs_channel_select').setPlaceholder('Choisir un salon');
 			interaction.guild.channels.cache.filter(c => c.type === ChannelType.GuildText).first(25).forEach(c => logsChanSelect.addOptions({ label: c.name, value: c.id }));
@@ -67,7 +70,10 @@ async function buildFeatureMenu(interaction, type) {
 
 		case 'economy':
 			embed = new EmbedBuilder().setTitle('💰 Config. Économie').setColor(0xE67E22)
-				.addFields({ name: 'Statut', value: s(settings.economy_enabled) }, { name: 'Argent par message', value: `${settings.economy_money_per_message}` });
+				.addFields(
+					{ name: 'Statut', value: s(settings.economy_enabled) },
+					{ name: 'Argent par message', value: String(settings.economy_money_per_message) }
+				);
 			const ecoToggle = new ButtonBuilder().setCustomId('config_toggle_economy_enabled').setLabel(settings.economy_enabled ? 'Désactiver' : 'Activer').setStyle(settings.economy_enabled ? ButtonStyle.Danger : ButtonStyle.Success);
 			const ecoEditBtn = new ButtonBuilder().setCustomId('economy_settings_modal').setLabel('Modifier Gains').setStyle(ButtonStyle.Primary);
 			components.push(new ActionRowBuilder().addComponents(ecoToggle, ecoEditBtn, backButton));
@@ -75,7 +81,10 @@ async function buildFeatureMenu(interaction, type) {
 
 		case 'xp':
 			embed = new EmbedBuilder().setTitle('✨ Config. XP & Niveaux').setColor(0x3498DB)
-				.addFields({ name: 'Statut', value: s(settings.xp_enabled) }, { name: 'XP par message', value: `${settings.economy_xp_per_message}` });
+				.addFields(
+					{ name: 'Statut', value: s(settings.xp_enabled) },
+					{ name: 'XP par message', value: String(settings.economy_xp_per_message) }
+				);
 			const xpToggle = new ButtonBuilder().setCustomId('config_toggle_xp_enabled').setLabel(settings.xp_enabled ? 'Désactiver' : 'Activer').setStyle(settings.xp_enabled ? ButtonStyle.Danger : ButtonStyle.Success);
 			const xpEditBtn = new ButtonBuilder().setCustomId('economy_settings_modal').setLabel('Modifier Gains').setStyle(ButtonStyle.Primary);
 			components.push(new ActionRowBuilder().addComponents(xpToggle, xpEditBtn, backButton));
