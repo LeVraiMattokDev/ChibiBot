@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const db = require('../database');
+const { colors } = require('../utils/constants');
 
 const SANCTIONS_PER_PAGE = 5;
 
@@ -15,7 +16,7 @@ async function buildCasierEmbed(interaction, page, targetUser = null) {
 
 	// Construire l'embed
 	const embed = new EmbedBuilder()
-		.setColor(targetUser ? 0xFF0000 : 0x0099FF)
+		.setColor(targetUser ? colors.error : colors.primary)
 		.setTitle(targetUser ? `Casier judiciaire de ${targetUser.username}` : `Dernières sanctions du serveur`)
 		.setFooter({ text: `Page ${page} sur ${totalPages} (${totalSanctions} sanctions au total)` });
 	

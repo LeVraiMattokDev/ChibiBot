@@ -65,22 +65,18 @@ async function init() {
 async function setGuildSettings(guildId, newSettings) {
 	const oldSettings = await getGuildSettings(guildId);
 	const settings = { ...oldSettings, ...newSettings };
+
+	// Construit la requête dynamiquement pour ne mettre à jour que ce qui est nécessaire.
+	const fields = Object.keys(settings).filter(k => k !== 'guildId');
+	const values = fields.map(k => settings[k]);
+	const assignments = fields.map(field => `${field} = VALUES(${field})`).join(', ');
+
 	const sql = `
-		INSERT INTO guild_settings (guildId, welcome_enabled, welcome_channel_id, welcome_message, log_enabled, log_channel_id, economy_enabled, economy_money_per_message, xp_enabled, economy_xp_per_message, shop_enabled)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-		ON DUPLICATE KEY UPDATE
-			welcome_enabled = VALUES(welcome_enabled), welcome_channel_id = VALUES(welcome_channel_id),
-			welcome_message = VALUES(welcome_message), log_enabled = VALUES(log_enabled), log_channel_id = VALUES(log_channel_id),
-			economy_enabled = VALUES(economy_enabled), economy_money_per_message = VALUES(economy_money_per_message),
-			xp_enabled = VALUES(xp_enabled), economy_xp_per_message = VALUES(economy_xp_per_message), shop_enabled = VALUES(shop_enabled)`;
-	await pool.execute(sql, [
-		guildId, 
-		settings.welcome_enabled ?? false, settings.welcome_channel_id || null, settings.welcome_message || null,
-		settings.log_enabled ?? true, settings.log_channel_id || null,
-		settings.economy_enabled ?? true, settings.economy_money_per_message ?? 1,
-		settings.xp_enabled ?? true, settings.economy_xp_per_message ?? 10,
-		settings.shop_enabled ?? true
-	]);
+		INSERT INTO guild_settings (guildId, ${fields.join(', ')})
+		VALUES (?, ${fields.map(() => '?').join(', ')})
+		ON DUPLICATE KEY UPDATE ${assignments}`;
+	
+	await pool.execute(sql, [guildId, ...values]);
 }
 
 async function getGuildSettings(guildId) {

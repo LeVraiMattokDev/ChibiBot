@@ -6,16 +6,9 @@ module.exports = {
 		// --- Slash Command Handler ---
 		if (interaction.isChatInputCommand()) {
 			const command = interaction.client.commands.get(interaction.commandName);
-			if (!command) {
-				console.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
-				return;
-			}
-			// Logger
-			const user = interaction.user.tag;
-			const commandName = interaction.commandName;
-			const guild = interaction.guild ? interaction.guild.name : 'Direct Message';
-			const channel = interaction.channel ? interaction.channel.name : 'N/A';
-			console.log(`[Activity] User: ${user} | Command: /${commandName} | Server: "${guild}" | Channel: #${channel}`);
+			if (!command) return console.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
+			
+			console.log(`[Activity] User: ${interaction.user.tag} | Command: /${interaction.commandName}`);
 
 			try {
 				await command.execute(interaction);
@@ -28,50 +21,38 @@ module.exports = {
 			return;
 		}
 
-		// --- Component Interaction Handlers ---
-
-		// Pagination du casier
-		if (interaction.isButton() && interaction.customId.startsWith('casier_')) {
-			const casierCommand = interaction.client.commands.get('casier');
-			if (casierCommand) await casierCommand.handlePagination(interaction);
-			return;
-		}
-
-		// Panneau de configuration
-		const configCommand = interaction.client.commands.get('config');
-		if (!configCommand) return;
+		// --- Component Interaction Handler ---
+		const [commandName, category, action] = interaction.customId.split('_');
 
 		try {
-			if (interaction.isStringSelectMenu()) {
-				if (interaction.customId === 'config_category_select') await configCommand.handleCategorySelect(interaction);
-				if (interaction.customId === 'welcome_channel_select') await configCommand.handleWelcomeChannel(interaction);
-				if (interaction.customId === 'logs_channel_select') await configCommand.handleLogsChannel(interaction);
+			// Routeur pour le casier
+			if (commandName === 'casier') {
+				const casierCommand = interaction.client.commands.get('casier');
+				if (casierCommand) await casierCommand.handlePagination(interaction);
 				return;
 			}
-			if (interaction.isButton()) {
-				// Clic sur un bouton toggle (activer/désactiver)
-				if (interaction.customId.startsWith('config_toggle_')) {
-					const feature = interaction.customId.replace('config_toggle_', '');
-					await configCommand.handleToggle(interaction, feature);
+
+			// Routeur pour le panneau de configuration
+			if (commandName === 'config') {
+				const configCommand = interaction.client.commands.get('config');
+				if (!configCommand) return;
+
+				if (category === 'main') {
+					await interaction.update(await configCommand.handleMain(interaction));
 					return;
 				}
-				if (interaction.customId === 'config_main_menu') await configCommand.handleBack(interaction);
-				if (interaction.customId === 'welcome_message_modal') await configCommand.handleWelcomeMessageModal(interaction);
-				if (interaction.customId === 'economy_settings_modal') await configCommand.handleEconomySettingsModal(interaction);
-				return;
-			}
-			if (interaction.isModalSubmit()) {
-				if (interaction.customId === 'welcome_message_modal_submit') await configCommand.handleWelcomeMessageSubmit(interaction);
-				if (interaction.customId === 'economy_settings_submit') await configCommand.handleEconomySettingsSubmit(interaction);
+
+				const panel = configCommand.panels.get(category);
+				if (panel && panel.handlers[action]) {
+					const response = await panel.handlers[action](interaction);
+					if (response) { // Si le handler retourne une nouvelle vue, on la met à jour
+						await interaction.update(response);
+					}
+				}
 				return;
 			}
 		} catch (error) {
-			console.error('[ERROR] Error handling component interaction', error);
-			const errorPayload = { content: 'There was an error while handling this interaction!', flags: MessageFlags.Ephemeral };
-			if (interaction.replied || interaction.deferred) await interaction.followUp(errorPayload);
-			else await interaction.reply(errorPayload);
+			console.error(`[ERROR] Error handling component interaction (${interaction.customId})`, error);
 		}
 	},
 };
-
-

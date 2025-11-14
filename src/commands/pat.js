@@ -1,4 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { colors } = require('../utils/constants');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -16,7 +17,7 @@ module.exports = {
             const data = await response.json();
 
             const embed = new EmbedBuilder()
-                .setColor(0xADD8E6) // Bleu clair
+                .setColor(colors.info) // Bleu clair
                 .setDescription(`**${user.username}** tapote gentiment **${target.username}**.`)
                 .setImage(data.url);
 

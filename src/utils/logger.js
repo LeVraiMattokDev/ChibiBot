@@ -1,5 +1,6 @@
 const { EmbedBuilder, PermissionsBitField } = require('discord.js');
 const db = require('../database');
+const { colors } = require('./constants');
 
 /**
  * Envoie un message de log standardisé dans le salon configuré.
@@ -52,25 +53,25 @@ async function logSanction(interaction, type, targetUser, reason, duration = nul
 	switch (type.toUpperCase()) {
 		case 'BAN':
 			title = 'Membre Banni';
-			color = 0xED4245; // Rouge
+			color = colors.error;
 			fields.push({ name: 'Durée', value: duration || 'Permanente' });
 			break;
 		case 'UNBAN':
 			title = 'Membre Débanni';
-			color = 0x57F287; // Vert
+			color = colors.success;
 			break;
 		case 'KICK':
 			title = 'Membre Expulsé';
-			color = 0xE67E22; // Orange
+			color = colors.warning;
 			break;
 		case 'TIMEOUT':
 			title = 'Membre Isolé (Timeout)';
-			color = 0x5865F2; // Bleu
+			color = colors.primary;
 			fields.push({ name: 'Durée', value: `${duration} minute(s)` });
 			break;
 		case 'UNMUTE':
 			title = 'Membre Rétabli (Unmute)';
-			color = 0x57F287; // Vert
+			color = colors.success;
 			break;
 	}
 
