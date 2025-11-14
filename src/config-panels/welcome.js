@@ -2,7 +2,7 @@ const { EmbedBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, Chann
 const db = require('../database');
 const { colors } = require('../utils/constants');
 
-async function buildWelcomeMenu(interaction) {
+async function build(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	const s = (bool) => bool ? '✅ Activé' : '❌ Désactivé';
 
@@ -15,29 +15,26 @@ async function buildWelcomeMenu(interaction) {
 
 	const toggle = new ButtonBuilder().setCustomId('config_welcome_toggle').setLabel(settings.welcome_enabled ? 'Désactiver' : 'Activer').setStyle(settings.welcome_enabled ? ButtonStyle.Danger : ButtonStyle.Success);
 	const msgBtn = new ButtonBuilder().setCustomId('config_welcome_message').setLabel('Modifier Message').setStyle(ButtonStyle.Primary);
-	const backBtn = new ButtonBuilder().setCustomId('config_main').setLabel('Retour').setStyle(ButtonStyle.Secondary);
+	const backBtn = new ButtonBuilder().setCustomId('config_main_build').setLabel('Retour').setStyle(ButtonStyle.Secondary);
 	
 	const chanSelect = new StringSelectMenuBuilder().setCustomId('config_welcome_channel').setPlaceholder('Choisir un salon');
 	interaction.guild.channels.cache.filter(c => c.type === ChannelType.GuildText).first(25).forEach(c => chanSelect.addOptions({ label: c.name, value: c.id }));
 
-	const row1 = new ActionRowBuilder().addComponents(toggle, msgBtn, backBtn);
-	const row2 = new ActionRowBuilder().addComponents(chanSelect);
-	
-	return { embeds: [embed], components: [row1, row2], ephemeral: true };
+	return { embeds: [embed], components: [new ActionRowBuilder().addComponents(toggle, msgBtn, backBtn), new ActionRowBuilder().addComponents(chanSelect)], ephemeral: true };
 }
 
-async function handleWelcomeToggle(interaction) {
+async function handleToggle(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	await db.setGuildSettings(interaction.guild.id, { welcome_enabled: !settings.welcome_enabled });
-	return buildWelcomeMenu(interaction);
+	return build(interaction);
 }
 
-async function handleWelcomeChannel(interaction) {
+async function handleChannel(interaction) {
 	await db.setGuildSettings(interaction.guild.id, { welcome_channel_id: interaction.values[0] });
-	return buildWelcomeMenu(interaction);
+	return build(interaction);
 }
 
-async function handleWelcomeMessageModal(interaction) {
+async function handleMessage(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	const modal = new ModalBuilder().setCustomId('config_welcome_messageSubmit').setTitle('Modifier le message de bienvenue');
 	const input = new TextInputBuilder().setCustomId('message_input').setLabel('Message').setStyle(TextInputStyle.Paragraph).setValue(settings.welcome_message || '');
@@ -45,7 +42,7 @@ async function handleWelcomeMessageModal(interaction) {
 	await interaction.showModal(modal);
 }
 
-async function handleWelcomeMessageSubmit(interaction) {
+async function handleMessageSubmit(interaction) {
 	const message = interaction.fields.getTextInputValue('message_input');
 	await db.setGuildSettings(interaction.guild.id, { welcome_message: message });
 	await interaction.reply({ content: '✅ Message mis à jour !', ephemeral: true });
@@ -53,11 +50,11 @@ async function handleWelcomeMessageSubmit(interaction) {
 
 module.exports = {
 	name: 'welcome',
-	build: buildWelcomeMenu,
+	build: build,
 	handlers: {
-		toggle: handleWelcomeToggle,
-		channel: handleWelcomeChannel,
-		message: handleWelcomeMessageModal,
-		messageSubmit: handleWelcomeMessageSubmit,
+		toggle: handleToggle,
+		channel: handleChannel,
+		message: handleMessage,
+		messageSubmit: handleMessageSubmit,
 	}
 };

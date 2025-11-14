@@ -39,12 +39,11 @@ async function buildMainMenu(interaction) {
 			emoji: { 'welcome': '👋', 'logs': '📝', 'economy': '💰', 'xp': '✨', 'shop': '🏪' }[panel.name]
 		})));
 
-	const row = new ActionRowBuilder().addComponents(selectMenu);
-	return { embeds: [embed], components: [row], ephemeral: true };
+	return { embeds: [embed], components: [new ActionRowBuilder().addComponents(selectMenu)], ephemeral: true };
 }
 
 
-// --- Commande et Handlers ---
+// --- Commande et Export ---
 
 module.exports = {
 	data: new SlashCommandBuilder()
@@ -58,8 +57,7 @@ module.exports = {
 		await interaction.reply(await buildMainMenu(interaction));
 	},
 	
-	// Handler pour le retour au menu principal
-	async handleMain(interaction) {
+	async handleMainBuild(interaction) {
 		return buildMainMenu(interaction);
 	}
 };

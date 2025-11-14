@@ -1,9 +1,8 @@
-// Similaire à economy.js, mais pour l'XP
 const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const db = require('../database');
 const { colors } = require('../utils/constants');
 
-async function buildXpMenu(interaction) {
+async function build(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	const s = (bool) => bool ? '✅ Activé' : '❌ Désactivé';
 
@@ -12,19 +11,18 @@ async function buildXpMenu(interaction) {
 	
 	const toggle = new ButtonBuilder().setCustomId('config_xp_toggle').setLabel(settings.xp_enabled ? 'Désactiver' : 'Activer').setStyle(settings.xp_enabled ? ButtonStyle.Danger : ButtonStyle.Success);
 	const editBtn = new ButtonBuilder().setCustomId('config_xp_edit').setLabel('Modifier Gains').setStyle(ButtonStyle.Primary);
-	const backBtn = new ButtonBuilder().setCustomId('config_main').setLabel('Retour').setStyle(ButtonStyle.Secondary);
+	const backBtn = new ButtonBuilder().setCustomId('config_main_build').setLabel('Retour').setStyle(ButtonStyle.Secondary);
 
-	const row = new ActionRowBuilder().addComponents(toggle, editBtn, backBtn);
-	return { embeds: [embed], components: [row], ephemeral: true };
+	return { embeds: [embed], components: [new ActionRowBuilder().addComponents(toggle, editBtn, backBtn)], ephemeral: true };
 }
 
-async function handleXpToggle(interaction) {
+async function handleToggle(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	await db.setGuildSettings(interaction.guild.id, { xp_enabled: !settings.xp_enabled });
-	return buildXpMenu(interaction);
+	return build(interaction);
 }
 
-async function handleXpModal(interaction) {
+async function handleEdit(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	const modal = new ModalBuilder().setCustomId('config_xp_submit').setTitle('Modifier les Gains');
 	const xpInput = new TextInputBuilder().setCustomId('xp_input').setLabel('XP gagné par message').setStyle(TextInputStyle.Short).setValue(String(settings.economy_xp_per_message));
@@ -32,7 +30,7 @@ async function handleXpModal(interaction) {
 	await interaction.showModal(modal);
 }
 
-async function handleXpSubmit(interaction) {
+async function handleSubmit(interaction) {
 	const xp = parseInt(interaction.fields.getTextInputValue('xp_input'), 10);
 	if (isNaN(xp) || xp < 0) return interaction.reply({ content: '❌ Veuillez entrer un nombre entier positif valide.', ephemeral: true });
 	await db.setGuildSettings(interaction.guild.id, { economy_xp_per_message: xp });
@@ -41,10 +39,10 @@ async function handleXpSubmit(interaction) {
 
 module.exports = {
 	name: 'xp',
-	build: buildXpMenu,
+	build: build,
 	handlers: {
-		toggle: handleXpToggle,
-		edit: handleXpModal,
-		submit: handleXpSubmit,
+		toggle: handleToggle,
+		edit: handleEdit,
+		submit: handleSubmit,
 	}
 };

@@ -2,7 +2,7 @@ const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ModalBuilder
 const db = require('../database');
 const { colors } = require('../utils/constants');
 
-async function buildEconomyMenu(interaction) {
+async function build(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	const s = (bool) => bool ? '✅ Activé' : '❌ Désactivé';
 
@@ -11,19 +11,18 @@ async function buildEconomyMenu(interaction) {
 	
 	const toggle = new ButtonBuilder().setCustomId('config_economy_toggle').setLabel(settings.economy_enabled ? 'Désactiver' : 'Activer').setStyle(settings.economy_enabled ? ButtonStyle.Danger : ButtonStyle.Success);
 	const editBtn = new ButtonBuilder().setCustomId('config_economy_edit').setLabel('Modifier Gains').setStyle(ButtonStyle.Primary);
-	const backBtn = new ButtonBuilder().setCustomId('config_main').setLabel('Retour').setStyle(ButtonStyle.Secondary);
+	const backBtn = new ButtonBuilder().setCustomId('config_main_build').setLabel('Retour').setStyle(ButtonStyle.Secondary);
 
-	const row = new ActionRowBuilder().addComponents(toggle, editBtn, backBtn);
-	return { embeds: [embed], components: [row], ephemeral: true };
+	return { embeds: [embed], components: [new ActionRowBuilder().addComponents(toggle, editBtn, backBtn)], ephemeral: true };
 }
 
-async function handleEconomyToggle(interaction) {
+async function handleToggle(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	await db.setGuildSettings(interaction.guild.id, { economy_enabled: !settings.economy_enabled });
-	return buildEconomyMenu(interaction);
+	return build(interaction);
 }
 
-async function handleEconomyModal(interaction) {
+async function handleEdit(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
 	const modal = new ModalBuilder().setCustomId('config_economy_submit').setTitle('Modifier les Gains');
 	const moneyInput = new TextInputBuilder().setCustomId('money_input').setLabel('Argent gagné par message').setStyle(TextInputStyle.Short).setValue(String(settings.economy_money_per_message));
@@ -31,7 +30,7 @@ async function handleEconomyModal(interaction) {
 	await interaction.showModal(modal);
 }
 
-async function handleEconomySubmit(interaction) {
+async function handleSubmit(interaction) {
 	const money = parseFloat(interaction.fields.getTextInputValue('money_input'));
 	if (isNaN(money) || money < 0) return interaction.reply({ content: '❌ Veuillez entrer un nombre positif valide.', ephemeral: true });
 	await db.setGuildSettings(interaction.guild.id, { economy_money_per_message: money });
@@ -40,10 +39,10 @@ async function handleEconomySubmit(interaction) {
 
 module.exports = {
 	name: 'economy',
-	build: buildEconomyMenu,
+	build: build,
 	handlers: {
-		toggle: handleEconomyToggle,
-		edit: handleEconomyModal,
-		submit: handleEconomySubmit,
+		toggle: handleToggle,
+		edit: handleEdit,
+		submit: handleSubmit,
 	}
 };

@@ -3,7 +3,6 @@ const { Events, MessageFlags } = require('discord.js');
 module.exports = {
 	name: Events.InteractionCreate,
 	async execute(interaction) {
-		// --- Slash Command Handler ---
 		if (interaction.isChatInputCommand()) {
 			const command = interaction.client.commands.get(interaction.commandName);
 			if (!command) return console.error(`[ERROR] No command matching ${interaction.commandName} was found.`);
@@ -25,31 +24,23 @@ module.exports = {
 		const [commandName, category, action] = interaction.customId.split('_');
 
 		try {
-			// Routeur pour le casier
 			if (commandName === 'casier') {
 				const casierCommand = interaction.client.commands.get('casier');
 				if (casierCommand) await casierCommand.handlePagination(interaction);
-				return;
 			}
-
-			// Routeur pour le panneau de configuration
+			
 			if (commandName === 'config') {
 				const configCommand = interaction.client.commands.get('config');
 				if (!configCommand) return;
 
-				if (category === 'main') {
-					await interaction.update(await configCommand.handleMain(interaction));
-					return;
-				}
-
 				const panel = configCommand.panels.get(category);
 				if (panel && panel.handlers[action]) {
 					const response = await panel.handlers[action](interaction);
-					if (response) { // Si le handler retourne une nouvelle vue, on la met à jour
-						await interaction.update(response);
-					}
-				}
-				return;
+					if (response) await interaction.update(response);
+				} else if (action === 'build') { // Cas spécial pour le retour au menu principal
+                    const mainPanel = require(`../commands/config.js`);
+                    await interaction.update(await mainPanel.handleMainBuild(interaction));
+                }
 			}
 		} catch (error) {
 			console.error(`[ERROR] Error handling component interaction (${interaction.customId})`, error);
