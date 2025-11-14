@@ -52,10 +52,12 @@ module.exports = {
 				if (interaction.customId === 'config_main_menu') await configCommand.handleBack(interaction);
 				if (interaction.customId === 'welcome_toggle') await configCommand.handleWelcomeToggle(interaction);
 				if (interaction.customId === 'welcome_message_modal') await configCommand.handleWelcomeMessageModal(interaction);
+				if (interaction.customId === 'economy_settings_modal') await configCommand.handleEconomySettingsModal(interaction);
 				return;
 			}
 			if (interaction.isModalSubmit()) {
 				if (interaction.customId === 'welcome_message_modal_submit') await configCommand.handleWelcomeMessageSubmit(interaction);
+				if (interaction.customId === 'economy_settings_submit') await configCommand.handleEconomySettingsSubmit(interaction);
 				return;
 			}
 		} catch (error) {
