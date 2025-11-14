@@ -27,29 +27,34 @@ module.exports = {
 				return;
 			}
 			
-			// 3. Mettre à jour le profil
-			const newMoney = parseFloat(profile.money) + parseFloat(settings.economy_money_per_message);
-			const newXp = parseInt(profile.xp, 10) + parseInt(settings.economy_xp_per_message);
+			// 3. Mettre à jour le profil en fonction des modules activés
+			const updates = { last_message_timestamp: now };
+			let gainedSomething = false;
 
-			await db.updateUserProfile(message.author.id, message.guild.id, {
-				money: newMoney,
-				xp: newXp,
-				last_message_timestamp: now,
-			});
+			if (settings.economy_enabled) {
+				updates.money = parseFloat(profile.money) + parseFloat(settings.economy_money_per_message);
+				gainedSomething = true;
+			}
+			if (settings.xp_enabled) {
+				updates.xp = parseInt(profile.xp, 10) + parseInt(settings.economy_xp_per_message);
+				gainedSomething = true;
+			}
+			
+			if (!gainedSomething) return; // Ne fait rien si les deux modules sont désactivés
+			await db.updateUserProfile(message.author.id, message.guild.id, updates);
 
-			// 4. Vérifier la montée de niveau
-			const currentLevel = parseInt(profile.level, 10);
-			const xpNeeded = xpForLevel(currentLevel);
+			// 4. Vérifier la montée de niveau (uniquement si le module XP est activé)
+			if (settings.xp_enabled) {
+				const currentLevel = parseInt(profile.level, 10);
+				const xpNeeded = xpForLevel(currentLevel);
+				const newXp = updates.xp || parseInt(profile.xp, 10);
 
-			if (newXp >= xpNeeded) {
-				const newLevel = currentLevel + 1;
-				await db.updateUserProfile(message.author.id, message.guild.id, {
-					level: newLevel,
-					// Optionnel: on peut reset l'XP ou le laisser s'accumuler. On le laisse s'accumuler ici.
-				});
-				
-				// Envoyer un message de félicitations
-				message.channel.send(`🎉 Bravo ${message.author}, tu viens de passer au **niveau ${newLevel}** !`);
+				if (newXp >= xpNeeded) {
+					const newLevel = currentLevel + 1;
+					await db.updateUserProfile(message.author.id, message.guild.id, { level: newLevel });
+					
+					message.channel.send(`🎉 Bravo ${message.author}, tu viens de passer au **niveau ${newLevel}** !`);
+				}
 			}
 
 		} catch (error) {

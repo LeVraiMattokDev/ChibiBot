@@ -11,8 +11,8 @@ async function logAction(guild, embed) {
 
 	try {
 		const settings = await db.getGuildSettings(guild.id);
-		if (!settings || !settings.log_channel_id) {
-			return; // Le salon de log n'est pas configuré
+		if (!settings || !settings.log_enabled || !settings.log_channel_id) {
+			return; // Le module de log est désactivé ou le salon n'est pas configuré
 		}
 
 		const logChannel = guild.channels.cache.get(settings.log_channel_id);

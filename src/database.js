@@ -27,9 +27,12 @@ async function init() {
 	// Table des configurations de serveur
 	await pool.execute(`
 	  CREATE TABLE IF NOT EXISTS guild_settings (
-		guildId VARCHAR(255) PRIMARY KEY, welcome_enabled BOOLEAN DEFAULT FALSE, welcome_channel_id VARCHAR(255),
-		welcome_message TEXT, log_channel_id VARCHAR(255), economy_money_per_message FLOAT DEFAULT 1,
-		economy_xp_per_message INT DEFAULT 10
+		guildId VARCHAR(255) PRIMARY KEY, 
+		welcome_enabled BOOLEAN DEFAULT FALSE, welcome_channel_id VARCHAR(255), welcome_message TEXT,
+		log_enabled BOOLEAN DEFAULT TRUE, log_channel_id VARCHAR(255),
+		economy_enabled BOOLEAN DEFAULT TRUE, economy_money_per_message FLOAT DEFAULT 1,
+		xp_enabled BOOLEAN DEFAULT TRUE, economy_xp_per_message INT DEFAULT 10,
+		shop_enabled BOOLEAN DEFAULT TRUE
 	  )`);
 
 	// Table des profils utilisateurs pour l'économie
@@ -63,16 +66,20 @@ async function setGuildSettings(guildId, newSettings) {
 	const oldSettings = await getGuildSettings(guildId);
 	const settings = { ...oldSettings, ...newSettings };
 	const sql = `
-		INSERT INTO guild_settings (guildId, welcome_enabled, welcome_channel_id, welcome_message, log_channel_id, economy_money_per_message, economy_xp_per_message)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO guild_settings (guildId, welcome_enabled, welcome_channel_id, welcome_message, log_enabled, log_channel_id, economy_enabled, economy_money_per_message, xp_enabled, economy_xp_per_message, shop_enabled)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON DUPLICATE KEY UPDATE
 			welcome_enabled = VALUES(welcome_enabled), welcome_channel_id = VALUES(welcome_channel_id),
-			welcome_message = VALUES(welcome_message), log_channel_id = VALUES(log_channel_id),
-			economy_money_per_message = VALUES(economy_money_per_message), economy_xp_per_message = VALUES(economy_xp_per_message)`;
+			welcome_message = VALUES(welcome_message), log_enabled = VALUES(log_enabled), log_channel_id = VALUES(log_channel_id),
+			economy_enabled = VALUES(economy_enabled), economy_money_per_message = VALUES(economy_money_per_message),
+			xp_enabled = VALUES(xp_enabled), economy_xp_per_message = VALUES(economy_xp_per_message), shop_enabled = VALUES(shop_enabled)`;
 	await pool.execute(sql, [
-		guildId, settings.welcome_enabled || false, settings.welcome_channel_id || null,
-		settings.welcome_message || null, settings.log_channel_id || null,
-		settings.economy_money_per_message ?? 1, settings.economy_xp_per_message ?? 10
+		guildId, 
+		settings.welcome_enabled ?? false, settings.welcome_channel_id || null, settings.welcome_message || null,
+		settings.log_enabled ?? true, settings.log_channel_id || null,
+		settings.economy_enabled ?? true, settings.economy_money_per_message ?? 1,
+		settings.xp_enabled ?? true, settings.economy_xp_per_message ?? 10,
+		settings.shop_enabled ?? true
 	]);
 }
 
@@ -130,6 +137,15 @@ async function addUserItemToInventory(guildId, userId, itemId) {
 	await pool.execute(sql, [guildId, userId, itemId]);
 }
 
+async function getLeaderboard(guildId, type = 'money', limit = 10) {
+	const orderBy = type === 'level' ? 'level DESC, xp DESC' : 'money DESC';
+	const [rows] = await pool.execute(
+		`SELECT userId, money, level, xp FROM user_profiles WHERE guildId = ? ORDER BY ${orderBy} LIMIT ?`,
+		[guildId, limit]
+	);
+	return rows;
+}
+
 // --- Sanctions ---
 async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null, expires_at = null) {
 	const timestamp = Date.now();
@@ -174,7 +190,7 @@ async function revokeSanction(sanctionId, guildId, revokerId, revokerName, reaso
 module.exports = {
 	init, setGuildSettings, getGuildSettings,
 	// Économie
-	getUserProfile, updateUserProfile, addShopItem, removeShopItem, getShopItem, getShopItems, getUserInventory, addUserItemToInventory,
+	getUserProfile, updateUserProfile, addShopItem, removeShopItem, getShopItem, getShopItems, getUserInventory, addUserItemToInventory, getLeaderboard,
 	// Sanctions
 	addSanction, getSanctionsPaginated, countSanctions, getExpiredBans, getLatestActiveSanction, revokeSanction
 };

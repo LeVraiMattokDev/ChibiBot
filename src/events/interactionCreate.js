@@ -49,8 +49,13 @@ module.exports = {
 				return;
 			}
 			if (interaction.isButton()) {
+				// Clic sur un bouton toggle (activer/désactiver)
+				if (interaction.customId.startsWith('config_toggle_')) {
+					const feature = interaction.customId.replace('config_toggle_', '');
+					await configCommand.handleToggle(interaction, feature);
+					return;
+				}
 				if (interaction.customId === 'config_main_menu') await configCommand.handleBack(interaction);
-				if (interaction.customId === 'welcome_toggle') await configCommand.handleWelcomeToggle(interaction);
 				if (interaction.customId === 'welcome_message_modal') await configCommand.handleWelcomeMessageModal(interaction);
 				if (interaction.customId === 'economy_settings_modal') await configCommand.handleEconomySettingsModal(interaction);
 				return;
