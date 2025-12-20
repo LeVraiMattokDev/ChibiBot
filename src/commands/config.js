@@ -130,7 +130,7 @@ module.exports = {
 			const modal = await buildEconomyModal(interaction);
 			await interaction.showModal(modal);
 		}
-	},,
+	},
 
 	// --- Logique de traitement des Modals ---
 
