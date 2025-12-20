@@ -20,30 +20,31 @@ module.exports = {
 			return;
 		}
 
-		// --- Component Interaction Handler ---
-		const [commandName, category, action] = interaction.customId.split('_');
-
-		try {
-			if (commandName === 'casier') {
-				const casierCommand = interaction.client.commands.get('casier');
-				if (casierCommand) await casierCommand.handlePagination(interaction);
-			}
-			
-			if (commandName === 'config') {
+				// --- GESTION DES SOUMISSIONS DE MODALS ---
+		if (interaction.isModalSubmit()) {
+			// Si le modal vient du système de configuration
+			if (interaction.customId.startsWith('config_')) {
 				const configCommand = interaction.client.commands.get('config');
-				if (!configCommand) return;
-
-				const panel = configCommand.panels.get(category);
-				if (panel && panel.handlers[action]) {
-					const response = await panel.handlers[action](interaction);
-					if (response) await interaction.update(response);
-				} else if (action === 'build') { // Cas spécial pour le retour au menu principal
-                    const mainPanel = require(`../commands/config.js`);
-                    await interaction.update(await mainPanel.handleMainBuild(interaction));
-                }
+				if (configCommand) {
+					await configCommand.handleModalSubmit(interaction);
+				}
 			}
-		} catch (error) {
-			console.error(`[ERROR] Error handling component interaction (${interaction.customId})`, error);
+			return;
+		}
+
+		// --- GESTION DES AUTRES COMPOSANTS (BOUTONS, MENUS) ---
+		if (interaction.isButton() || interaction.isStringSelectMenu()) {
+			const [commandName] = interaction.customId.split('_');
+	
+			try {
+				if (commandName === 'casier') {
+					const casierCommand = interaction.client.commands.get('casier');
+					if (casierCommand) await casierCommand.handlePagination(interaction);
+				}
+				
+			} catch (error) {
+				console.error(`[ERROR] Error handling component interaction (${interaction.customId})`, error);
+			}
 		}
 	},
 };
