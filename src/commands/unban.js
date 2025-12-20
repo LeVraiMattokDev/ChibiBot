@@ -29,15 +29,22 @@ module.exports = {
 			return interaction.editReply(`❌ Utilisateur introuvable pour l'ID : \`${userId}\`.`);
 		}
 
-		try {
-			// 1. Révoquer le ban sur Discord
-			await interaction.guild.members.unban(targetUser, reason);
+				try {
+			// 1. Vérifier si l'utilisateur est réellement banni
+			const ban = await interaction.guild.bans.fetch(targetUser.id).catch(() => null);
+			if (!ban) {
+				return interaction.editReply(`❌ **${targetUser.tag}** n'est pas banni de ce serveur.`);
+			}
 
-			// 2. Trouver la dernière sanction de ban active pour cet utilisateur
+			// 2. Trouver et révoquer la dernière sanction de ban active dans la DB *avant* l'action Discord
+			// Cela prévient les "race conditions" avec le système de unban automatique.
 			const latestBan = await db.getLatestActiveSanction(targetUser.id, interaction.guild.id, 'BAN');
 			if (latestBan) {
 				await db.revokeSanction(latestBan.id, interaction.guild.id, revoker.id, revoker.tag, reason);
 			}
+
+			// 3. Révoquer le ban sur Discord
+			await interaction.guild.members.unban(targetUser, reason);
 
 			await interaction.editReply(`✅ Le bannissement de **${targetUser.tag}** a été révoqué.`);
 			
@@ -45,7 +52,8 @@ module.exports = {
 
 		} catch (error) {
 			console.error(error);
-			await interaction.editReply(`❌ Impossible de révoquer le bannissement de **${targetUser.tag}**. L'utilisateur n'est peut-être pas banni.`);
+			// Si le fetch a échoué après la vérification initiale (très peu probable), on donne un message d'erreur générique.
+			await interaction.editReply(`❌ Impossible de révoquer le bannissement de **${targetUser.tag}**. Une erreur inattendue est survenue.`);
 		}
 	},
 };

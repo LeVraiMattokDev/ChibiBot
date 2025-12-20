@@ -79,7 +79,7 @@ module.exports = {
 			await interaction.guild.members.ban(user, { reason: reason, deleteMessageDays: days });
 			
 			// Sauvegarde en DB avec la date d'expiration
-			await db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'BAN', reason, null, expires_at);
+			await db.addSanction(interaction.guild.id, user.id, user.tag, interaction.user.id, interaction.user.tag, 'BAN', reason, durationMs, expires_at);
 			
 			await interaction.editReply(`✅ **${user.tag}** a été banni temporairement jusqu'au <t:${Math.floor(expires_at / 1000)}:F>. Raison : ${reason}`);
 			

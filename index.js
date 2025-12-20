@@ -3,6 +3,7 @@ const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
 const db = require('./src/database.js');
+const { logAction } = require('./src/utils/logger');
 
 const client = new Client({ 
 	intents: [
@@ -76,7 +77,6 @@ for (const file of eventFiles) {
 						)
 						.setTimestamp();
 					
-					const { logAction } = require('./src/utils/logger');
 					await logAction(guild, embed);
 
 				} catch (error) {

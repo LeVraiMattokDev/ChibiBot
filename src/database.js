@@ -81,19 +81,55 @@ async function setGuildSettings(guildId, newSettings) {
 
 async function getGuildSettings(guildId) {
 	const [rows] = await pool.execute('SELECT * FROM guild_settings WHERE guildId = ?', [guildId]);
-	if (rows.length > 0) return rows[0];
-	await setGuildSettings(guildId, {});
-	const [newRows] = await pool.execute('SELECT * FROM guild_settings WHERE guildId = ?', [guildId]);
-	return newRows[0];
+	if (rows.length > 0) {
+		return rows[0];
+	}
+
+	// Si aucune configuration n'est trouvée, nous en créons une nouvelle et la retournons.
+	// Cela évite une deuxième requête à la base de données.
+	const defaultSettings = {
+		guildId: guildId,
+		welcome_enabled: false,
+		welcome_channel_id: null,
+		welcome_message: null,
+		log_enabled: true,
+		log_channel_id: null,
+		economy_enabled: true,
+		economy_money_per_message: 1,
+		xp_enabled: true,
+		economy_xp_per_message: 10,
+		shop_enabled: true
+	};
+
+	// Utilise setGuildSettings pour insérer les valeurs par défaut.
+	await setGuildSettings(guildId, defaultSettings);
+
+	// Pas besoin de relire depuis la DB, nous avons déjà les valeurs.
+	return defaultSettings;
 }
 
 // --- Économie ---
 async function getUserProfile(userId, guildId) {
 	const [rows] = await pool.execute('SELECT * FROM user_profiles WHERE userId = ? AND guildId = ?', [userId, guildId]);
-	if (rows.length > 0) return rows[0];
+	if (rows.length > 0) {
+		return rows[0];
+	}
+
+	// De même, nous créons un profil par défaut et le retournons directement.
+	const defaultProfile = {
+		userId: userId,
+		guildId: guildId,
+		money: 0.00,
+		xp: 0,
+		level: 0,
+		last_message_timestamp: 0
+	};
+	
+	// On insère ce profil par défaut dans la base de données.
 	await pool.execute('INSERT INTO user_profiles (userId, guildId) VALUES (?, ?)', [userId, guildId]);
-	const [newRows] = await pool.execute('SELECT * FROM user_profiles WHERE userId = ? AND guildId = ?', [userId, guildId]);
-	return newRows[0];
+	
+	// On retourne l'objet que nous avons déjà, évitant une requête SELECT.
+	return defaultProfile;
 }
 
 async function updateUserProfile(userId, guildId, data) {

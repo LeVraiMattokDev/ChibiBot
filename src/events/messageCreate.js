@@ -16,49 +16,54 @@ module.exports = {
 		if (message.author.bot || !message.guild) return;
 
 		try {
-			// 1. Récupérer les paramètres du serveur et le profil de l'utilisateur
 			const settings = await db.getGuildSettings(message.guild.id);
+			if (!settings.economy_enabled && !settings.xp_enabled) {
+				return;
+			}
+			
 			const profile = await db.getUserProfile(message.author.id, message.guild.id);
 
-			// 2. Vérifier le cooldown
+			// Applique un cooldown pour éviter le spam
 			const now = Date.now();
 			const lastMessageTimestamp = parseInt(profile.last_message_timestamp, 10);
 			if ((now - lastMessageTimestamp) / 1000 < COOLDOWN) {
 				return;
 			}
 			
-			// 3. Mettre à jour le profil en fonction des modules activés
 			const updates = { last_message_timestamp: now };
-			let gainedSomething = false;
 
 			if (settings.economy_enabled) {
 				updates.money = parseFloat(profile.money) + parseFloat(settings.economy_money_per_message);
-				gainedSomething = true;
 			}
-			if (settings.xp_enabled) {
-				updates.xp = parseInt(profile.xp, 10) + parseInt(settings.economy_xp_per_message);
-				gainedSomething = true;
-			}
-			
-			if (!gainedSomething) return; // Ne fait rien si les deux modules sont désactivés
-			await db.updateUserProfile(message.author.id, message.guild.id, updates);
 
-			// 4. Vérifier la montée de niveau (uniquement si le module XP est activé)
 			if (settings.xp_enabled) {
-				const currentLevel = parseInt(profile.level, 10);
-				const xpNeeded = xpForLevel(currentLevel);
-				const newXp = updates.xp || parseInt(profile.xp, 10);
+				let newXp = parseInt(profile.xp, 10) + parseInt(settings.economy_xp_per_message);
+				let newLevel = parseInt(profile.level, 10);
+				let xpNeeded = xpForLevel(newLevel);
+				let leveledUp = false;
 
-				if (newXp >= xpNeeded) {
-					const newLevel = currentLevel + 1;
-					await db.updateUserProfile(message.author.id, message.guild.id, { level: newLevel });
-					
+				// Boucle pour gérer les montées de niveau multiples
+				while (newXp >= xpNeeded) {
+					newLevel++;
+					newXp -= xpNeeded; // Reporter l'XP excédentaire
+					xpNeeded = xpForLevel(newLevel);
+					leveledUp = true;
+				}
+
+				updates.xp = newXp;
+				if (leveledUp) {
+					updates.level = newLevel;
 					message.channel.send(`🎉 Bravo ${message.author}, tu viens de passer au **niveau ${newLevel}** !`);
 				}
 			}
+			
+			// Appliquer toutes les mises à jour en une seule fois
+			if (Object.keys(updates).length > 1) {
+				await db.updateUserProfile(message.author.id, message.guild.id, updates);
+			}
 
 		} catch (error) {
-			console.error('Erreur lors de l\'attribution d\'XP/monnaie :', error);
+			console.error("Erreur lors de l'attribution d'XP/monnaie :", error);
 		}
 	},
 };

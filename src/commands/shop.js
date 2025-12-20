@@ -81,21 +81,34 @@ async function handleBuyItem(interaction) {
 
 	const item = await db.getShopItem(interaction.guild.id, itemName);
 	if (!item) {
-		return interaction.editReply(`❌ L\'objet "${itemName}" n\'existe pas dans le magasin.`);
+		return interaction.editReply(`❌ L'objet "${itemName}" n'existe pas dans le magasin.`);
 	}
 
 	const profile = await db.getUserProfile(interaction.user.id, interaction.guild.id);
-	if (profile.money < item.price) {
-		return interaction.editReply(`❌ Vous n\'avez pas assez d\'argent ! Il vous manque ${ (item.price - profile.money).toFixed(2) } pièces.`);
+	
+	// S'assurer que les prix et l'argent sont traités comme des nombres à virgule flottante
+	const userMoney = parseFloat(profile.money);
+	const itemPrice = parseFloat(item.price);
+
+	if (userMoney < itemPrice) {
+		return interaction.editReply(`❌ Vous n'avez pas assez d'argent ! Il vous manque **${(itemPrice - userMoney).toFixed(2)}** pièces.`);
 	}
 
-	const newMoney = profile.money - item.price;
-	await db.updateUserProfile(interaction.user.id, interaction.guild.id, { money: newMoney });
+	try {
+		// 1. Ajouter l'objet à l'inventaire de l'utilisateur
+		await db.addUserItemToInventory(interaction.guild.id, interaction.user.id, item.id);
 
-	// Note : Pour l'instant, l'achat ne fait rien d'autre que déduire l'argent.
-	// La logique pour "donner" l'objet (ex: un rôle) serait à ajouter ici.
-	
-	await interaction.editReply(`✅ Félicitations ! Vous avez acheté **${item.name}** pour ${item.price} pièces.`);
+		// 2. Mettre à jour le solde de l'utilisateur
+		const newMoney = userMoney - itemPrice;
+		await db.updateUserProfile(interaction.user.id, interaction.guild.id, { money: newMoney.toFixed(2) });
+
+		await interaction.editReply(`✅ Félicitations ! Vous avez acheté **${item.name}** pour **${itemPrice}** pièces. Il a été ajouté à votre inventaire.`);
+	} catch (error) {
+		console.error("Erreur lors de l'achat d'un objet :", error);
+		// On pourrait ajouter une logique pour annuler l'ajout à l'inventaire si la mise à jour de l'argent échoue,
+		// mais pour l'instant, un simple message d'erreur est suffisant.
+		await interaction.editReply("❌ Une erreur est survenue lors de votre achat. Veuillez contacter un administrateur.");
+	}
 }
 
 async function handleAddItem(interaction) {

@@ -1,0 +1,13 @@
+{
+	"token": "",
+	"clientId": "",
+    "guildId": "",
+	"blaguesApiToken": "",
+	"db": {
+	  "host": "",
+		"port": 3306,
+		"user": "",
+		"password": "",
+		"database": ""
+  }
+}
