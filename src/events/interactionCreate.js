@@ -33,9 +33,12 @@ module.exports = {
 		}
 
 		// --- GESTION DES AUTRES COMPOSANTS (BOUTONS, MENUS) ---
-		if (interaction.isButton() || interaction.isStringSelectMenu()) {
+				if (interaction.isButton() || interaction.isStringSelectMenu()) {
+			if (!interaction.customId) return;
 			const [commandName] = interaction.customId.split('_');
 	
+			if (!commandName) return;
+
 			try {
 				if (commandName === 'casier') {
 					const casierCommand = interaction.client.commands.get('casier');

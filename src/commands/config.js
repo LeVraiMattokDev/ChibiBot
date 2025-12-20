@@ -116,7 +116,8 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand.setName('economie').setDescription('Configure le système d\'économie.')),
 	
-	async execute(interaction) {
+		async execute(interaction) {
+		console.log('--- NOUVELLE COMMANDE CONFIG EXÉCUTÉE ---');
 		const subcommand = interaction.options.getSubcommand();
 		
 		if (subcommand === 'bienvenue') {
@@ -129,7 +130,7 @@ module.exports = {
 			const modal = await buildEconomyModal(interaction);
 			await interaction.showModal(modal);
 		}
-	},
+	},,
 
 	// --- Logique de traitement des Modals ---
 
