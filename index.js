@@ -49,7 +49,7 @@ for (const file of eventFiles) {
 (async () => {
 	await db.init();
 
-	// Boucle pour vérifier les bans expirés (toutes les 60 secondes)
+		// On vérifie périodiquement les bannissements temporaires qui ont expiré.
 	setInterval(async () => {
 		try {
 			const expiredBans = await db.getExpiredBans();
@@ -66,7 +66,6 @@ for (const file of eventFiles) {
 					await db.revokeSanction(ban.id, ban.guildId, client.user.id, client.user.tag, 'Expiration automatique');
 					console.log(`[TempBan] Unbanned ${ban.userName} from ${guild.name}.`);
 
-					// Optionnel : Envoyer un log de l'unban automatique
 					const user = await client.users.fetch(ban.userId);
 					const embed = new (require('discord.js').EmbedBuilder)()
 						.setTitle('Membre Débanni (Automatique)')
@@ -80,7 +79,8 @@ for (const file of eventFiles) {
 					await logAction(guild, embed);
 
 				} catch (error) {
-					// L'utilisateur n'est peut-être plus banni, on met juste à jour la DB
+					// Si l'utilisateur a déjà été débanni manuellement, Discord renvoie une erreur "Unknown Ban".
+					// Dans ce cas, on met simplement à jour la sanction en base de données sans rien faire d'autre.
 					if (error.code === 10026) { // Unknown Ban
 						await db.revokeSanction(ban.id, ban.guildId, client.user.id, client.user.tag, 'Déjà débanni');
 					} else {

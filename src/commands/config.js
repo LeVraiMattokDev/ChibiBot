@@ -2,7 +2,8 @@ const { SlashCommandBuilder, PermissionFlagsBits, ModalBuilder, TextInputBuilder
 const db = require('../database');
 const { colors } = require('../utils/constants');
 
-// --- Construction des Modals ---
+// Chaque fonction build crée un formulaire (modal) pré-rempli avec les
+// paramètres actuels du serveur, ce qui permet de les modifier facilement.
 
 async function buildWelcomeModal(interaction) {
 	const settings = await db.getGuildSettings(interaction.guild.id);
@@ -116,8 +117,7 @@ module.exports = {
 		.addSubcommand(subcommand =>
 			subcommand.setName('economie').setDescription('Configure le système d\'économie.')),
 	
-		async execute(interaction) {
-		console.log('--- NOUVELLE COMMANDE CONFIG EXÉCUTÉE ---');
+			async execute(interaction) {
 		const subcommand = interaction.options.getSubcommand();
 		
 		if (subcommand === 'bienvenue') {
@@ -132,8 +132,8 @@ module.exports = {
 		}
 	},
 
-	// --- Logique de traitement des Modals ---
-
+	// Cette fonction est appelée par le gestionnaire d'événements (interactionCreate.js)
+	// lorsque l'utilisateur soumet un des formulaires de configuration.
 	async handleModalSubmit(interaction) {
 		await interaction.deferReply({ ephemeral: true });
 		
@@ -172,6 +172,7 @@ module.exports = {
 					embeds: [new EmbedBuilder().setColor(colors.success).setDescription(`✅ ${feedbackMessage}`)]
 				});
 			} else {
+				// Ne devrait jamais arriver si le customId est correct.
 				throw new Error('Modal non reconnu.');
 			}
 		} catch (error) {

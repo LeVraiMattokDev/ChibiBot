@@ -1,20 +1,4 @@
-const mysql = require('mysql2/promise');
-const { db: dbConfig } = require('../config.json');
-
-let pool;
-
-async function init() {
-	pool = mysql.createPool({
-		host: process.env.DB_HOST || dbConfig.host,
-		user: dbConfig.user,
-		password: dbConfig.password,
-		database: dbConfig.database,
-		waitForConnections: true,
-		connectionLimit: 10,
-		queueLimit: 0,
-	});
-
-	// Table des sanctions
+	// On s'assure que toutes les tables nécessaires existent au démarrage.
 	await pool.execute(`
 	  CREATE TABLE IF NOT EXISTS sanctions (
 		id INT AUTO_INCREMENT PRIMARY KEY, guildId VARCHAR(255) NOT NULL, userId VARCHAR(255) NOT NULL,
@@ -24,7 +8,6 @@ async function init() {
 		revoked_reason VARCHAR(255), revoked_timestamp BIGINT
 	  )`);
 
-	// Table des configurations de serveur
 	await pool.execute(`
 	  CREATE TABLE IF NOT EXISTS guild_settings (
 		guildId VARCHAR(255) PRIMARY KEY, 
@@ -35,7 +18,6 @@ async function init() {
 		shop_enabled BOOLEAN DEFAULT TRUE
 	  )`);
 
-	// Table des profils utilisateurs pour l'économie
 	await pool.execute(`
 	  CREATE TABLE IF NOT EXISTS user_profiles (
 		userId VARCHAR(255) NOT NULL, guildId VARCHAR(255) NOT NULL, money DECIMAL(15, 2) DEFAULT 0.00,
@@ -43,14 +25,12 @@ async function init() {
 		PRIMARY KEY (userId, guildId)
 	  )`);
 
-	// Table des objets du magasin
 	await pool.execute(`
 	  CREATE TABLE IF NOT EXISTS shop_items (
 		id INT AUTO_INCREMENT PRIMARY KEY, guildId VARCHAR(255) NOT NULL, name VARCHAR(255) NOT NULL,
 		description TEXT, price DECIMAL(15, 2) NOT NULL, UNIQUE KEY (guildId, name)
 	  )`);
 	
-	// Table des inventaires utilisateurs
 	await pool.execute(`
 	  CREATE TABLE IF NOT EXISTS user_inventories (
 		id INT AUTO_INCREMENT PRIMARY KEY, guildId VARCHAR(255) NOT NULL, userId VARCHAR(255) NOT NULL,
@@ -60,13 +40,14 @@ async function init() {
 	  )`);
 
 	console.log('MariaDB connection pool created and tables checked.');
-}
+
 
 async function setGuildSettings(guildId, newSettings) {
 	const oldSettings = await getGuildSettings(guildId);
 	const settings = { ...oldSettings, ...newSettings };
 
-	// Construit la requête dynamiquement pour ne mettre à jour que ce qui est nécessaire.
+	// On construit une requête "upsert" dynamique pour insérer ou mettre à jour les paramètres.
+	// C'est plus propre et plus performant que de faire un SELECT puis un INSERT/UPDATE.
 	const fields = Object.keys(settings).filter(k => k !== 'guildId');
 	const values = fields.map(k => settings[k]);
 	const assignments = fields.map(field => `${field} = VALUES(${field})`).join(', ');
@@ -85,8 +66,8 @@ async function getGuildSettings(guildId) {
 		return rows[0];
 	}
 
-	// Si aucune configuration n'est trouvée, nous en créons une nouvelle et la retournons.
-	// Cela évite une deuxième requête à la base de données.
+	// Si un serveur n'a pas de configuration, on en crée une par défaut.
+	// C'est mieux que de devoir vérifier partout dans le code si settings existe.
 	const defaultSettings = {
 		guildId: guildId,
 		welcome_enabled: false,
@@ -101,21 +82,19 @@ async function getGuildSettings(guildId) {
 		shop_enabled: true
 	};
 
-	// Utilise setGuildSettings pour insérer les valeurs par défaut.
 	await setGuildSettings(guildId, defaultSettings);
 
-	// Pas besoin de relire depuis la DB, nous avons déjà les valeurs.
+	// On retourne directement l'objet par défaut pour éviter une seconde requête à la DB.
 	return defaultSettings;
 }
 
-// --- Économie ---
 async function getUserProfile(userId, guildId) {
 	const [rows] = await pool.execute('SELECT * FROM user_profiles WHERE userId = ? AND guildId = ?', [userId, guildId]);
 	if (rows.length > 0) {
 		return rows[0];
 	}
 
-	// De même, nous créons un profil par défaut et le retournons directement.
+	// Si un utilisateur n'a pas de profil, on lui en crée un à la volée.
 	const defaultProfile = {
 		userId: userId,
 		guildId: guildId,
@@ -125,10 +104,9 @@ async function getUserProfile(userId, guildId) {
 		last_message_timestamp: 0
 	};
 	
-	// On insère ce profil par défaut dans la base de données.
 	await pool.execute('INSERT INTO user_profiles (userId, guildId) VALUES (?, ?)', [userId, guildId]);
 	
-	// On retourne l'objet que nous avons déjà, évitant une requête SELECT.
+	// On retourne l'objet par défaut pour éviter un second SELECT.
 	return defaultProfile;
 }
 
@@ -178,7 +156,6 @@ async function getLeaderboard(guildId, type = 'money', limit = 10) {
 	return rows;
 }
 
-// --- Sanctions ---
 async function addSanction(guildId, userId, userName, moderatorId, moderatorName, type, reason, duration = null, expires_at = null) {
 	const timestamp = Date.now();
 	await pool.execute('INSERT INTO sanctions (guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [guildId, userId, userName, moderatorId, moderatorName, type, reason, duration, timestamp, expires_at]);
@@ -221,8 +198,7 @@ async function revokeSanction(sanctionId, guildId, revokerId, revokerName, reaso
 
 module.exports = {
 	init, setGuildSettings, getGuildSettings,
-	// Économie
 	getUserProfile, updateUserProfile, addShopItem, removeShopItem, getShopItem, getShopItems, getUserInventory, addUserItemToInventory, getLeaderboard,
-	// Sanctions
 	addSanction, getSanctionsPaginated, countSanctions, getExpiredBans, getLatestActiveSanction, revokeSanction
 };
+

@@ -1,10 +1,11 @@
 const { Events } = require('discord.js');
 const db = require('../database');
 
-// Cooldown en secondes pour éviter le spam d'XP/monnaie
+// Pour éviter le spam, on ne donne de l'XP et de l'argent que toutes les 60 secondes.
 const COOLDOWN = 60;
 
-// Formule pour l'XP requis par niveau : 5 * (level ^ 2) + 50 * level + 100
+// C'est la formule qui détermine combien d'XP est nécessaire pour passer au niveau suivant.
+// La difficulté augmente à chaque niveau.
 function xpForLevel(level) {
     return 5 * (level ** 2) + (50 * level) + 100;
 }
@@ -12,7 +13,6 @@ function xpForLevel(level) {
 module.exports = {
 	name: Events.MessageCreate,
 	async execute(message) {
-		// Ignorer les bots et les messages en DM
 		if (message.author.bot || !message.guild) return;
 
 		try {
@@ -23,7 +23,6 @@ module.exports = {
 			
 			const profile = await db.getUserProfile(message.author.id, message.guild.id);
 
-			// Applique un cooldown pour éviter le spam
 			const now = Date.now();
 			const lastMessageTimestamp = parseInt(profile.last_message_timestamp, 10);
 			if ((now - lastMessageTimestamp) / 1000 < COOLDOWN) {
@@ -42,10 +41,11 @@ module.exports = {
 				let xpNeeded = xpForLevel(newLevel);
 				let leveledUp = false;
 
-				// Boucle pour gérer les montées de niveau multiples
+				// Si un utilisateur gagne beaucoup d'XP d'un coup, cette boucle
+				// lui permet de monter plusieurs niveaux en même temps.
 				while (newXp >= xpNeeded) {
 					newLevel++;
-					newXp -= xpNeeded; // Reporter l'XP excédentaire
+					newXp -= xpNeeded; // L'XP en trop est reporté pour le niveau suivant.
 					xpNeeded = xpForLevel(newLevel);
 					leveledUp = true;
 				}
@@ -57,7 +57,7 @@ module.exports = {
 				}
 			}
 			
-			// Appliquer toutes les mises à jour en une seule fois
+			// On applique toutes les modifications (argent, xp, niveau) en une seule requête.
 			if (Object.keys(updates).length > 1) {
 				await db.updateUserProfile(message.author.id, message.guild.id, updates);
 			}
