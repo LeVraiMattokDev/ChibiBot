@@ -14,40 +14,38 @@ module.exports = {
 			option.setName('utilisateur')
 				.setDescription('Supprimer les messages d\'un utilisateur spécifique'))
 		.setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
-	async execute(interaction) {
+		async execute(interaction) {
 		const amount = interaction.options.getInteger('nombre');
 		const user = interaction.options.getUser('utilisateur');
 
-		await interaction.deferReply({ ephemeral: true });
-
-		if (!interaction.channel.permissionsFor(interaction.guild.members.me).has(PermissionFlagsBits.ManageMessages)) {
-			return interaction.editReply({ content: 'Je n\'ai pas la permission de supprimer des messages dans ce salon.' });
-		}
+		await interaction.reply({ content: 'Suppression des messages en cours...', ephemeral: true, fetchReply: true });
 
 		try {
+			const messages = await interaction.channel.messages.fetch({ limit: 100 });
 			let messagesToDelete;
+
 			if (user) {
-				const allMessages = await interaction.channel.messages.fetch({ limit: 100 });
-				messagesToDelete = allMessages.filter(m => m.author.id === user.id).first(amount);
+				messagesToDelete = messages.filter(m => m.author.id === user.id).first(amount);
 			} else {
-				messagesToDelete = amount;
-			}
-			
-			if (messagesToDelete.length === 0) {
-				return interaction.editReply({ content: 'Aucun message à supprimer trouvé pour cet utilisateur dans les 100 derniers messages.' });
+				messagesToDelete = messages.first(amount);
 			}
 
-			const deletedMessages = await interaction.channel.bulkDelete(messagesToDelete, true);
-			
-			if (user) {
-				await interaction.editReply({ content: `✅ ${deletedMessages.size} message(s) de **${user.tag}** ont été supprimés.` });
-			} else {
+			if (messagesToDelete.length === 0) {
+				return interaction.editReply({ content: 'Aucun message à supprimer n\'a été trouvé avec les critères spécifiés.' });
+			}
+
+			// On ne peut pas bulkDelete un seul message, mais on peut le faire pour 0, donc on vérifie > 1
+			if (messagesToDelete.length > 1) {
+				const deletedMessages = await interaction.channel.bulkDelete(messagesToDelete, true);
 				await interaction.editReply({ content: `✅ ${deletedMessages.size} message(s) ont été supprimés.` });
+			} else {
+				await messagesToDelete[0].delete();
+				await interaction.editReply({ content: '✅ 1 message a été supprimé.' });
 			}
 
 		} catch (error) {
-			console.error(error);
-			await interaction.editReply({ content: '❌ Une erreur est survenue. Je ne peux pas supprimer les messages datant de plus de 14 jours.' });
+			console.error('Erreur dans la commande /clear :', error);
+			await interaction.editReply({ content: '❌ Une erreur est survenue. Note : Les messages datant de plus de 14 jours ne peuvent pas être supprimés en masse.' });
 		}
 	},
 };

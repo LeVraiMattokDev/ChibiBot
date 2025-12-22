@@ -1,66 +1,44 @@
-const { SlashCommandBuilder, MessageFlags } = require('discord.js');
-const db = require('../database');
+const { SlashCommandBuilder } = require('discord.js');
+const mysql = require('mysql2/promise');
+const { db: dbConfig } = require('../../config.json');
 
-// ID de l'utilisateur autorisé
-const OWNER_ID = '318398917030969345';
+const { ownerId } = require('../../config.json');
 
 module.exports = {
 	data: new SlashCommandBuilder()
-		.setName('test-addsanction')
-		.setDescription('[DEV] Ajoute une fausse sanction dans la base de données pour tester.')
-		.addUserOption(option =>
-			option.setName('utilisateur')
-				.setDescription('L\'utilisateur cible de la fausse sanction.')
-				.setRequired(true))
-		.addStringOption(option =>
-			option.setName('type')
-				.setDescription('Le type de la fausse sanction.')
-				.setRequired(true)
-				.addChoices(
-					{ name: 'BAN', value: 'BAN' },
-					{ name: 'KICK', value: 'KICK' },
-					{ name: 'TIMEOUT', value: 'TIMEOUT' },
-				))
-		.addStringOption(option =>
-			option.setName('raison')
-				.setDescription('La raison de la fausse sanction.')),
+		.setName('dev-reset-db')
+		.setDescription('[DANGER] Supprime la table des sanctions pour la mettre à jour.'),
 	async execute(interaction) {
-		// --- Vérification de l'autorisation ---
-		if (interaction.user.id !== OWNER_ID) {
+
+		if (interaction.user.id !== ownerId) {
 			return interaction.reply({
 				content: '❌ Vous n\'avez pas la permission d\'utiliser cette commande.',
-				flags: MessageFlags.Ephemeral
+				ephemeral: true,
 			});
 		}
 
-		const targetUser = interaction.options.getUser('utilisateur');
-		const type = interaction.options.getString('type');
-		const reason = interaction.options.getString('raison') || 'Raison de test';
-		const duration = type === 'TIMEOUT' ? 10 : null; // Ajoute une durée de 10 min pour les faux timeouts
+		await interaction.deferReply({ ephemeral: true });
 
 		try {
-			await db.addSanction(
-				interaction.guild.id,
-				targetUser.id,
-				targetUser.tag,
-				interaction.user.id,
-				interaction.user.tag,
-				type,
-				reason,
-				duration
-			);
-
-			await interaction.reply({
-				content: `✅ Fausse sanction de type **${type}** ajoutée pour **${targetUser.tag}** dans la base de données.`,
-				flags: MessageFlags.Ephemeral
+			const connection = await mysql.createConnection({
+				host: process.env.DB_HOST || dbConfig.host,
+				port: dbConfig.port,
+				user: dbConfig.user,
+				password: dbConfig.password,
 			});
+
+			await connection.execute('DROP TABLE IF EXISTS sanctions;');
+			await connection.end();
+
+			await interaction.editReply({
+				content: '✅ Table `sanctions` supprimée. Redémarrez le bot MAINTENANT.',
+			});
+
 		} catch (error) {
-			console.error('[ERROR] Failed to add test sanction:', error);
-			await interaction.reply({
-				content: '❌ Une erreur est survenue lors de l\'ajout de la sanction de test.',
-				flags: MessageFlags.Ephemeral
+			console.error('[FATAL DEV COMMAND] Failed to drop table:', error);
+			await interaction.editReply({
+				content: `❌ Une erreur est survenue : ${error.message}`,
 			});
 		}
 	},
 };
-

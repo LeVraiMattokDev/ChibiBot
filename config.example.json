@@ -1,13 +1,14 @@
 {
-	"token": "",
-	"clientId": "",
-    "guildId": "",
-	"blaguesApiToken": "",
+	"token": "VOTRE_TOKEN_DISCORD_ICI",
+	"clientId": "ID_CLIENT_DE_VOTRE_BOT",
+	"guildId": "ID_DE_VOTRE_SERVEUR_DE_TEST",
+	"ownerId": "VOTRE_ID_DISCORD",
+	"blaguesApiToken": "VOTRE_TOKEN_POUR_L_API_DE_BLAGUES",
 	"db": {
-	  "host": "",
+		"host": "localhost",
 		"port": 3306,
-		"user": "",
-		"password": "",
-		"database": ""
+		"user": "votre_utilisateur_db",
+		"password": "votre_mot_de_passe_db",
+		"database": "votre_nom_de_db"
   }
 }

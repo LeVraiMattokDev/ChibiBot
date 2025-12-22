@@ -15,7 +15,11 @@ module.exports = {
 				.setDescription('L\'utilisateur dont vous voulez voir le profil.')
 				.setRequired(false)),
 	async execute(interaction) {
-		const targetUser = interaction.options.getUser('utilisateur') || interaction.user;
+				const targetUser = interaction.options.getUser('utilisateur') || interaction.user;
+
+		if (targetUser.bot) {
+			return interaction.reply({ content: "Les bots n'ont pas de profil, ils sont hors compétition ! 😉", ephemeral: true });
+		}
 		
 		await interaction.deferReply();
 

@@ -18,7 +18,7 @@ module.exports = {
 		
 		await interaction.deferReply();
 
-		const leaderboardData = await db.getLeaderboard(interaction.guild.id, type, 10);
+				const leaderboardData = await db.getLeaderboard(interaction.guild.id, type, 10);
 
 		const embed = new EmbedBuilder()
 			.setTitle(`Classement du serveur - ${type === 'money' ? '💰 Argent' : '📈 Niveaux'}`)
@@ -27,17 +27,20 @@ module.exports = {
 		if (leaderboardData.length === 0) {
 			embed.setDescription('Personne n\'est encore classé !');
 		} else {
-			// On va chercher les pseudos à partir des ID
-			const leaderboardPromises = leaderboardData.map(async (entry, index) => {
-				const user = await interaction.client.users.fetch(entry.userId).catch(() => ({ username: 'Utilisateur inconnu' }));
+			// On récupère tous les membres du serveur en une fois pour un accès rapide via le cache.
+			// C'est beaucoup plus performant que de faire 10 appels API.
+			await interaction.guild.members.fetch();
+
+			const leaderboardString = leaderboardData.map((entry, index) => {
+				const member = interaction.guild.members.cache.get(entry.userId);
+				const username = member ? member.user.username : 'Utilisateur inconnu';
 				const rank = index + 1;
 				const value = type === 'money'
-					? `${parseFloat(entry.money).toFixed(2)} pièces`
-					: `Niveau ${entry.level} (${entry.xp} XP)`;
-				return `${rank}. **${user.username}** - ${value}`;
-			});
+					? `**${parseFloat(entry.money).toFixed(2)}** pièces`
+					: `Niveau **${entry.level}** (${entry.xp} XP)`;
+				return `${rank}. **${username}** - ${value}`;
+			}).join('\n');
 			
-			const leaderboardString = (await Promise.all(leaderboardPromises)).join('\n');
 			embed.setDescription(leaderboardString);
 		}
 
