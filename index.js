@@ -2,12 +2,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
-const db = require('./src/database.js');
+const db = require('./src/database');
 const { logAction } = require('./src/utils/logger');
 
-const client = new Client({ 
+const client = new Client({
 	intents: [
-		GatewayIntentBits.Guilds, 
+		GatewayIntentBits.Guilds,
 		GatewayIntentBits.GuildMembers,
 		GatewayIntentBits.GuildMessages,
 		GatewayIntentBits.MessageContent,
@@ -49,7 +49,7 @@ for (const file of eventFiles) {
 (async () => {
 	await db.init();
 
-		// On vérifie périodiquement les bannissements temporaires qui ont expiré.
+	// On vérifie périodiquement les bannissements temporaires qui ont expiré.
 	setInterval(async () => {
 		try {
 			const expiredBans = await db.getExpiredBans();
@@ -60,7 +60,7 @@ for (const file of eventFiles) {
 			for (const ban of expiredBans) {
 				const guild = await client.guilds.fetch(ban.guildId).catch(() => null);
 				if (!guild) continue;
-				
+
 				try {
 					await guild.members.unban(ban.userId, 'Le bannissement temporaire a expiré.');
 					await db.revokeSanction(ban.id, ban.guildId, client.user.id, client.user.tag, 'Expiration automatique');
@@ -75,7 +75,7 @@ for (const file of eventFiles) {
 							{ name: 'Raison', value: 'Le bannissement temporaire a expiré.' }
 						)
 						.setTimestamp();
-					
+
 					await logAction(guild, embed);
 
 				} catch (error) {
